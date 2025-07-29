@@ -1,0 +1,4 @@
+# config.py
+CASHFREE_APP_ID = "10353675dab56ec08ade5e452227635301"
+CASHFREE_SECRET_KEY = "cfsk_ma_prod_e1a80799a7e13d26688c30ba58cd7c98_52c64541"
+CASHFREE_ENV = "PROD"  # Use "TEST" for sandbox
