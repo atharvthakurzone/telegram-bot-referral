@@ -275,7 +275,7 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         await update.message.reply_text(
-            "💳 To activate your account, click the button below to pay ₹999 securely via Cashfree and upload the screenshot.",
+            "💳 To activate your account, click the button below to pay ₹999 securely and upload the screenshot.",
             reply_markup=keyboard
         )
     else:
@@ -284,9 +284,8 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ])
 
         await update.message.reply_text(
-            "⚠️ Failed to generate payment link.\n"
+            "❌ Failed to generate payment link.\n"
             "You can still continue by uploading your payment screenshot manually or contact admin.",
-            reply_markup=keyboard
         )
 
     # Always send instructions
@@ -294,8 +293,9 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📌 After completing payment:\n\n"
         "1. Take a screenshot of payment success.\n"
         "2. Upload it here for admin to verify.\n\n"
-        "_You will be activated after manual verification._",
-        parse_mode="Markdown"
+        "_Your account will be activated after manual verification._",
+        parse_mode="Markdown",
+	reply_markup=keyboard
     )
 
     print("User is now awaiting activation")
