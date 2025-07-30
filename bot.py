@@ -3,6 +3,9 @@ import re
 import os
 import requests
 import asyncio
+import sys
+
+sys.stdout.reconfigure(line_buffering=True)
 
 from telegram.ext import ApplicationBuilder
 
@@ -694,11 +697,6 @@ conv_handler = ConversationHandler(
     fallbacks=[MessageHandler(filters.Regex("^(🔙 Back|🏠 Home)$"), cancel_referral)],
 )
 
-#        LOG HANDLER
-from telegram.ext import BaseHandler
-
-async def log_all_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(f"📩 Raw update: {update}")
 
 # Register all handlers
     # 1. Commands
@@ -718,14 +716,18 @@ app.add_handler(conv_handler)
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
 app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
 
+from telegram.ext import MessageHandler, filters, CallbackContext
 
+async def log_all_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(f"📩 Raw update: {update}", flush=True)
+	
 app.add_handler(MessageHandler(filters.ALL, log_all_updates))
 
 
 # Start bot with webhook
 
 if __name__ == "__main__":
-    print("🤖 Bot is running with webhook...")
+    print("🤖 Bot is running with webhook...", flush=True)
     app.run_webhook(
         listen="0.0.0.0",
         port=int(os.environ.get("PORT", 8443)),
