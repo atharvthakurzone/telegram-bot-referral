@@ -4,6 +4,12 @@ import os
 import requests
 import asyncio
 
+from telegram.ext import ApplicationBuilder
+
+# Your handler imports here
+from handlers import *  # if applicable
+from config import TOKEN
+
 from db import get_connection
 
 from cashfree import generate_payment_link
@@ -687,6 +693,7 @@ async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📤 Broadcast sent to {success}/{len(users)} users.")
 
 # Start Botasync def main():
+async def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     # Register handlers
