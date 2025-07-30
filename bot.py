@@ -22,7 +22,7 @@ from db import (
 
 from db import is_user_banned
 
-app = ApplicationBuilder().token(TOKEN).build()
+   app = ApplicationBuilder().token(TOKEN).build()
    # Set up webhook
    PORT = int(os.environ.get('PORT', 8443))  # Render sets the PORT environment variable
    app.run_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN)
