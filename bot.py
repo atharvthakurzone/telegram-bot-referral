@@ -2,6 +2,7 @@ import sqlite3
 import datetime
 import re
 import os
+import requests
 
 from cashfree import generate_payment_link
 
@@ -22,8 +23,6 @@ from db import (
 
 from db import is_user_banned
 
-app = ApplicationBuilder().token(TOKEN).build()
-
 # Set up webhook
 PORT = int(os.environ.get('PORT', 8443))  # Render sets the PORT environment variable
 app.run_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN)
@@ -36,8 +35,10 @@ CASHFREE_SECRET_KEY = os.getenv("CASHFREE_SECRET_KEY")
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 
-webhook_url = f"https://{SERVICE_NAME}.onrender.com/{TOKEN}"
-requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}")
+#app = ApplicationBuilder().token(TOKEN).build()
+
+webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
+#requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}")
 
 init_db()
 
