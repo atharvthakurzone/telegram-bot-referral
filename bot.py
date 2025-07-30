@@ -264,15 +264,16 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["awaiting_activation"] = True
 
     # Always show cancel button
+	await update.message.reply_text(
+            "🙏 Kindly activate your account to start receiving earning benefits."
+        )
+
     if payment_url:
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("💳 Pay ₹999 Now", url=payment_url)],
             [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
         ])
 
-        await update.message.reply_text(
-            "🙏 Kindly activate your account to start receiving earning benefits."
-        )
 
         await update.message.reply_text(
             "💳 To activate your account, click the button below to pay ₹999 securely and upload the screenshot.",
