@@ -1,4 +1,3 @@
-import sqlite3
 import datetime
 import re
 import os
@@ -20,7 +19,7 @@ from db import (
     init_db, add_user, get_user, get_referred_users,
     get_user_profile, get_user_by_uid, activate_user,
     is_user_activated, get_all_users, count_users,
-    get_pending_users, DB_NAME
+    get_pending_users
 )
 
 from db import is_user_banned
@@ -32,6 +31,8 @@ CASHFREE_APP_ID = os.getenv("CASHFREE_APP_ID")
 CASHFREE_SECRET_KEY = os.getenv("CASHFREE_SECRET_KEY")
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ADMIN_CHAT_ID = 1469443288  # @Deep_1200
+
+init_db()
 
 async def clear_webhook():
     bot = Bot(token=TOKEN)
@@ -52,8 +53,6 @@ def escape_markdown(text: str) -> str:
 
 webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
 #requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}")
-
-init_db()
 
 ASK_NAME, ASK_REFERRAL_CODE, ASK_NAME_WITH_REFERRAL, WAITING_FOR_SCREENSHOT = range(4)
 
