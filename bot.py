@@ -728,9 +728,14 @@ if __name__ == "__main__":
 
 print("🤖 Bot is running with webhook...")
 
-app.run_webhook(
-    listen="0.0.0.0",
-    port=PORT,
-    url_path=TOKEN,
-    webhook_url=f"https://{RENDER_HOST}/{TOKEN}"
-)
+async def main():
+    await app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=TOKEN,
+        webhook_url=f"https://{RENDER_HOST}/{TOKEN}"
+    )
+
+# ✅ Use get_event_loop().run_until_complete() instead of asyncio.run()
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
