@@ -735,4 +735,6 @@ if __name__ == "__main__":
     app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
 
     print("🤖 Bot is running...")
-    asyncio.run(app.run_polling())
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(app.run_polling())
