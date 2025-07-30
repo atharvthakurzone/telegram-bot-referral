@@ -228,52 +228,9 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, reply_markup=back_menu, parse_mode="Markdown")
 
 # Activate
-# async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     user = update.effective_user
-
-#     if not get_user(user.id):
-#         await update.message.reply_text("❗ You are not registered. Use /start")
-#         return
-
-#     if is_user_activated(user.id):
-#         await update.message.reply_text("✅ Your ID is already activated.")
-#         return
-
-#     username = user.username or user.first_name or "User"
-#     payment_url = generate_payment_link(user.id, username)
-
-#     if not payment_url:
-#         await update.message.reply_text("❌ Failed to generate payment link. Please try again later.")
-#         return
-
-#     context.user_data["awaiting_activation"] = True
-
-#     keyboard = InlineKeyboardMarkup([
-#         [InlineKeyboardButton("💳 Pay ₹999 Now", url=payment_url)],
-#         [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
-#     ])
-
-#     await update.message.reply_text(
-#         "🙏 Kindly activate your account to start receiving earning benefits."
-#     )
-
-#     await update.message.reply_text(
-#         "💳 To activate your account, click the button below to pay ₹999 securely via Cashfree and upload the screenshot.",
-#         reply_markup=keyboard
-#     )
-
-#     await update.message.reply_text(
-#         "📌 After completing payment:\n\n"
-#         "1. Take a screenshot of payment success.\n"
-#         "2. Upload it here for admin to verify.\n\n"
-#         "_You will be activated after manual verification._",
-#         parse_mode="Markdown"
-#     )
-
-#     return WAITING_FOR_SCREENSHOT
-
 async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+
     if not get_user(user.id):
         await update.message.reply_text("❗ You are not registered. Use /start")
         return
@@ -282,37 +239,80 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("✅ Your ID is already activated.")
         return
 
+    username = user.username or user.first_name or "User"
+    payment_url = generate_payment_link(user.id, username)
+
+    if not payment_url:
+        await update.message.reply_text("❌ Failed to generate payment link. Please try again later.")
+        return
+
     context.user_data["awaiting_activation"] = True
 
-    upi_link = "https://djearnbot.github.io/pay-now/"
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("💳 Pay ₹999 Now", url=upi_link)],
+        [InlineKeyboardButton("💳 Pay ₹999 Now", url=payment_url)],
         [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
     ])
 
-    # ✅ Custom message before payment message
     await update.message.reply_text(
         "🙏 Kindly activate your account to start receiving earning benefits."
     )
 
-    # Existing message about payment button
     await update.message.reply_text(
-        "💳 To activate your account, click the button below to pay ₹999 via UPI and upload the screenshot.",
+        "💳 To activate your account, click the button below to pay ₹999 securely via Cashfree and upload the screenshot.",
         reply_markup=keyboard
     )
 
-    # UPI instructions
     await update.message.reply_text(
-        "📌 If the button doesn't open UPI apps:\n\n"
-        "• Open any UPI app (PhonePe, GPay, etc)\n"
-        "• Send ₹999 to:\n`8287978793@ptyes`\n"
-        "• UPI Name: DeepJadaun\n"
-        "• Note: Account Activation\n\n"
-        "Then upload the payment screenshot here.",
+        "📌 After completing payment:\n\n"
+        "1. Take a screenshot of payment success.\n"
+        "2. Upload it here for admin to verify.\n\n"
+        "_You will be activated after manual verification._",
         parse_mode="Markdown"
     )
 
     return WAITING_FOR_SCREENSHOT
+
+# async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
+#     user = update.effective_user
+#     if not get_user(user.id):
+#         await update.message.reply_text("❗ You are not registered. Use /start")
+#         return
+
+#     if is_user_activated(user.id):
+#         await update.message.reply_text("✅ Your ID is already activated.")
+#         return
+
+#     context.user_data["awaiting_activation"] = True
+
+#     upi_link = "https://djearnbot.github.io/pay-now/"
+#     keyboard = InlineKeyboardMarkup([
+#         [InlineKeyboardButton("💳 Pay ₹999 Now", url=upi_link)],
+#         [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
+#     ])
+
+#     # ✅ Custom message before payment message
+#     await update.message.reply_text(
+#         "🙏 Kindly activate your account to start receiving earning benefits."
+#     )
+
+#     # Existing message about payment button
+#     await update.message.reply_text(
+#         "💳 To activate your account, click the button below to pay ₹999 via UPI and upload the screenshot.",
+#         reply_markup=keyboard
+#     )
+
+#     # UPI instructions
+#     await update.message.reply_text(
+#         "📌 If the button doesn't open UPI apps:\n\n"
+#         "• Open any UPI app (PhonePe, GPay, etc)\n"
+#         "• Send ₹999 to:\n`8287978793@ptyes`\n"
+#         "• UPI Name: DeepJadaun\n"
+#         "• Note: Account Activation\n\n"
+#         "Then upload the payment screenshot here.",
+#         parse_mode="Markdown"
+#     )
+
+#     return WAITING_FOR_SCREENSHOT
 
 
 # Screenshot Handler
