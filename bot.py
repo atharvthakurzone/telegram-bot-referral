@@ -289,6 +289,8 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     return WAITING_FOR_SCREENSHOT
+    print("User is now awaiting activation")   # In activate()
+    print("Screenshot received")               # In handle_screenshot()
 
 # Screenshot Handler
 async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -334,6 +336,7 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("📩 Screenshot sent to admin. You'll be notified after verification.")
     context.user_data["awaiting_activation"] = False
 
+    print("User is now awaiting activation") 
     print("📸 Screenshot received by handler")
 
 # Admin Approve
