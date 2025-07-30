@@ -306,7 +306,7 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not context.user_data.get("awaiting_activation"):
         print("⛔ Not awaiting activation, but proceeding anyway")
-        await update.message.reply_text("⚠️ No activation session detected, but your screenshot was received.")
+        #await update.message.reply_text("⚠️ No activation session detected, but your screenshot was received.")
 
 
     # Get user info from DB
