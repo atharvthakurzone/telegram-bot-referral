@@ -1,5 +1,5 @@
 services:
-  - type: worker  # ← ✅ WAS: `web`, now `worker`
+  - type: web  # ← ✅ Needs to be 'web' for webhooks
     name: telegram-referral-bot
     env: python
     pythonVersion: 3.11
@@ -12,3 +12,5 @@ services:
         fromEnvVar: CASHFREE_APP_ID
       - key: CASHFREE_SECRET_KEY
         fromEnvVar: CASHFREE_SECRET_KEY
+      - key: DATABASE_URL
+        fromEnvVar: DATABASE_URL
