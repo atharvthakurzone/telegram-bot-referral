@@ -712,6 +712,16 @@ app.add_handler(conv_handler)
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
 app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
 
+#        LOG HANDLER
+from telegram.ext import BaseHandler
+
+class RawLoggerHandler(BaseHandler):
+    def check_update(self, update):
+        return True  # Log every update
+
+    async def handle_update(self, update, dispatcher):
+        print(f"📩 Raw update: {update}")
+
 # Start bot with webhook
 app.add_handler(RawLoggerHandler())
 
@@ -724,12 +734,3 @@ if __name__ == "__main__":
         webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
     )
 
-#        LOG HANDLER
-from telegram.ext import BaseHandler
-
-class RawLoggerHandler(BaseHandler):
-    def check_update(self, update):
-        return True  # Log every update
-
-    async def handle_update(self, update, dispatcher):
-        print(f"📩 Raw update: {update}")
