@@ -3,6 +3,8 @@ import datetime
 import re
 import os
 import requests
+import asyncio
+
 
 from cashfree import generate_payment_link
 
@@ -733,4 +735,4 @@ if __name__ == "__main__":
     app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
 
     print("🤖 Bot is running...")
-    app.run_polling()
+    asyncio.run(app.run_polling())
