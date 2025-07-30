@@ -261,26 +261,29 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = user.username or user.first_name or "User"
     payment_url = generate_payment_link(user.id, username)
 
-    if not payment_url:
-        await update.message.reply_text("❌ Failed to generate payment link. Please try again later.")
-        return
-
     context.user_data["awaiting_activation"] = True
 
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("💳 Pay ₹999 Now", url=payment_url)],
-        [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
-    ])
+    if payment_url:
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("💳 Pay ₹999 Now", url=payment_url)],
+            [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
+        ])
 
-    await update.message.reply_text(
-        "🙏 Kindly activate your account to start receiving earning benefits."
-    )
+        await update.message.reply_text(
+            "🙏 Kindly activate your account to start receiving earning benefits."
+        )
 
-    await update.message.reply_text(
-        "💳 To activate your account, click the button below to pay ₹999 securely via Cashfree and upload the screenshot.",
-        reply_markup=keyboard
-    )
+        await update.message.reply_text(
+            "💳 To activate your account, click the button below to pay ₹999 securely via Cashfree and upload the screenshot.",
+            reply_markup=keyboard
+        )
+    else:
+        await update.message.reply_text(
+            "⚠️ Failed to generate payment link.\n"
+            "You can still continue by uploading your payment screenshot manually."
+        )
 
+    # Always send these instructions
     await update.message.reply_text(
         "📌 After completing payment:\n\n"
         "1. Take a screenshot of payment success.\n"
@@ -288,9 +291,8 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "_You will be activated after manual verification._",
         parse_mode="Markdown"
     )
-	
-    print("User is now awaiting activation")   # In activate()
-    
+
+    print("User is now awaiting activation")
     return WAITING_FOR_SCREENSHOT
 
 # Screenshot Handler
