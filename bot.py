@@ -735,6 +735,6 @@ async def main():
         url_path=TOKEN,
         webhook_url=f"https://{RENDER_HOST}/{TOKEN}"
     )
-    await app.updater.idle()
+    await app.updater.wait()
 
 asyncio.run(main())
