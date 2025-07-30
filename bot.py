@@ -22,12 +22,21 @@ from db import (
 
 from db import is_user_banned
 
+app = ApplicationBuilder().token(TOKEN).build()
+   # Set up webhook
+   PORT = int(os.environ.get('PORT', 8443))  # Render sets the PORT environment variable
+   app.run_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN)
+
 def escape_markdown(text: str) -> str:
     return re.sub(r'([_*\[\]()~`>#+\-=|{}.!\\])', r'\\\1', text)
 
-
+CASHFREE_APP_ID = os.getenv("CASHFREE_APP_ID")
+CASHFREE_SECRET_KEY = os.getenv("CASHFREE_SECRET_KEY")
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ADMIN_CHAT_ID = 1469443288  # @Deep_1200
+
+webhook_url = f"https://{SERVICE_NAME}.onrender.com/{TOKEN}"
+requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}")
 
 init_db()
 
