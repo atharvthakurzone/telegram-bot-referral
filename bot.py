@@ -726,12 +726,9 @@ if __name__ == "__main__":
 
     print("🤖 Bot is running with webhook...")
 
-    async def main():
-        await app.run_webhook(
-            listen="0.0.0.0",
-            port=PORT,
-            url_path=TOKEN,
-            webhook_url=f"https://{RENDER_HOST}/{TOKEN}"
-        )
-
-    asyncio.run(main())
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=TOKEN,
+        webhook_url=f"https://{RENDER_HOST}/{TOKEN}"
+    )
