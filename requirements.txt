@@ -1,7 +1,5 @@
 python-telegram-bot==22.3
 requests==2.32.4
-cashfree==2.0.1  # ← Add only if you use the official Cashfree SDK
-
 # These may be included automatically, but are safe to keep
 anyio==4.9.0
 certifi==2025.7.14
