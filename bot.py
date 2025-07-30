@@ -26,6 +26,11 @@ from db import is_user_banned
 from telegram import Bot
 import asyncio
 
+CASHFREE_APP_ID = os.getenv("CASHFREE_APP_ID")
+CASHFREE_SECRET_KEY = os.getenv("CASHFREE_SECRET_KEY")
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+ADMIN_CHAT_ID = 1469443288  # @Deep_1200
+
 async def clear_webhook():
     bot = Bot(token=TOKEN)
     await bot.delete_webhook(drop_pending_updates=True)
@@ -40,11 +45,6 @@ asyncio.run(clear_webhook())
 
 def escape_markdown(text: str) -> str:
     return re.sub(r'([_*\[\]()~`>#+\-=|{}.!\\])', r'\\\1', text)
-
-CASHFREE_APP_ID = os.getenv("CASHFREE_APP_ID")
-CASHFREE_SECRET_KEY = os.getenv("CASHFREE_SECRET_KEY")
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 
 #app = ApplicationBuilder().token(TOKEN).build()
 
