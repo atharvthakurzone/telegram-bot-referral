@@ -53,8 +53,6 @@ PORT = int(os.environ.get("PORT", 8443))  # Render sets the PORT environment var
 def escape_markdown(text: str) -> str:
     return re.sub(r'([_*\[\]()~`>#+\-=|{}.!\\])', r'\\\1', text)
 
-#app = ApplicationBuilder().token(TOKEN).build()
-
 webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
 #requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}")
 
@@ -656,7 +654,13 @@ async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📤 Broadcast sent to {success}/{len(users)} users.")
 
 # Start Botasync def main():
-app = ApplicationBuilder().token(TOKEN).build()
+async def setup_webhook(app):
+    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
+    await app.bot.set_webhook(webhook_url)
+    print(f"✅ Webhook set to: {webhook_url}")
+
+app = ApplicationBuilder().token(TOKEN).post_init(setup_webhook).build()
+
 
 # Register conversation handler
 conv_handler = ConversationHandler(
@@ -693,18 +697,6 @@ app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
 
 # Start Botif __name__ == "__main__":
 if __name__ == "__main__":
-    import asyncio
-    from telegram import Bot
-
-    async def setup_webhook():
-        bot = Bot(token=TOKEN)
-        webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
-        await bot.set_webhook(webhook_url)
-        print(f"✅ Webhook set to: {webhook_url}")
-
-    # Run webhook setup before starting the bot
-    asyncio.run(setup_webhook())
-
     print("🤖 Bot is running with webhook...")
     app.run_webhook(
         listen="0.0.0.0",
