@@ -25,7 +25,7 @@ def escape_markdown(text: str) -> str:
     return re.sub(r'([_*\[\]()~`>#+\-=|{}.!\\])', r'\\\1', text)
 
 
-TOKEN = "8328714451:AAHlfW2nSD2roMAhSb3skw3_SbQryCIYf-s"
+TOKEN = "8468870496:AAF1GPQ4jNXO6n6-Kk1FgLT6Nu7cvTPE7-o"
 ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 
 init_db()
