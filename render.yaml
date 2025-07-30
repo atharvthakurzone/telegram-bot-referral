@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: telegram-referral-bot
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        fromEnvVar: TELEGRAM_BOT_TOKEN
+      - key: CASHFREE_APP_ID
+        fromEnvVar: CASHFREE_APP_ID
+      - key: CASHFREE_SECRET_KEY
+        fromEnvVar: CASHFREE_SECRET_KEY
