@@ -694,6 +694,12 @@ conv_handler = ConversationHandler(
     fallbacks=[MessageHandler(filters.Regex("^(🔙 Back|🏠 Home)$"), cancel_referral)],
 )
 
+#        LOG HANDLER
+from telegram.ext import BaseHandler
+
+async def log_all_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(f"📩 Raw update: {update}")
+
 # Register all handlers
     # 1. Commands
 app.add_handler(CommandHandler("start", start))
@@ -715,12 +721,6 @@ app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
 
 app.add_handler(MessageHandler(filters.ALL, log_all_updates))
 
-
-#        LOG HANDLER
-from telegram.ext import BaseHandler
-
-async def log_all_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(f"📩 Raw update: {update}")
 
 # Start bot with webhook
 
