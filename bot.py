@@ -687,6 +687,13 @@ async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📤 Broadcast sent to {success}/{len(users)} users.")
 
 # Start Bot
+app.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.environ.get("PORT", 8443)),
+        url_path=TOKEN,
+        webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
+    )
+
 if __name__ == "__main__":
     asyncio.run(clear_webhook())
     
@@ -725,10 +732,4 @@ if __name__ == "__main__":
 
     print("🤖 Bot is running with webhook...")
 
-    # ✅ Place this INSIDE the block
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=int(os.environ.get("PORT", 8443)),
-        url_path=TOKEN,
-        webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
-    )
+    asyncio.run(main())
