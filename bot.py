@@ -285,10 +285,10 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "_You will be activated after manual verification._",
         parse_mode="Markdown"
     )
-
-    return WAITING_FOR_SCREENSHOT
+	
     print("User is now awaiting activation")   # In activate()
-    print("Screenshot received")               # In handle_screenshot()
+    
+    return WAITING_FOR_SCREENSHOT
 
 # Screenshot Handler
 async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -334,7 +334,8 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("📩 Screenshot sent to admin. You'll be notified after verification.")
     context.user_data["awaiting_activation"] = False
 
-    print("User is now awaiting activation") 
+    await update.message.reply_text("✅ Screenshot received.")
+	
     print("📸 Screenshot received by handler")
 
 # Admin Approve
@@ -653,7 +654,7 @@ async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(f"📤 Broadcast sent to {success}/{len(users)} users.")
 
-# Start Botasync def main():
+# Start Botasync def main
 async def setup_webhook(app):
     webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
     await app.bot.set_webhook(webhook_url)
