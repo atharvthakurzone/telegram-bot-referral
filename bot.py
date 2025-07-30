@@ -292,17 +292,23 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Screenshot Handler
 async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("📸 handle_screenshot triggered")
+
     if not context.user_data.get("awaiting_activation"):
+        print("⛔ Not awaiting activation")
         return
 
     user = update.effective_user
+
     if not update.message.photo:
+        print("❗ No photo found in message")
         await update.message.reply_text("❗ Please upload a valid payment screenshot.")
         return
 
     # Get user info from DB
     user_data = get_user(user.id)
     if not user_data:
+        print(f"❗ User {user.id} not found in DB")
         await update.message.reply_text("❗ You are not registered.")
         return
 
@@ -318,7 +324,6 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🧾 Telegram ID: {telegram_id}"
     )
 
-    # Inline Approve / Reject buttons
     buttons = InlineKeyboardMarkup([
         [
             InlineKeyboardButton("✅ Approve", callback_data=f"approve:{uid}"),
@@ -328,15 +333,25 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Send to admin
     photo_file = update.message.photo[-1].file_id
-    await context.bot.send_photo(chat_id=ADMIN_CHAT_ID, photo=photo_file, caption=caption, reply_markup=buttons)
+    print(f"📤 Sending photo to admin {ADMIN_CHAT_ID} (file_id: {photo_file})")
 
-    # Notify user
-    await update.message.reply_text("📩 Screenshot sent to admin. You'll be notified after verification.")
+    try:
+        await context.bot.send_photo(
+            chat_id=ADMIN_CHAT_ID,
+            photo=photo_file,
+            caption=caption,
+            reply_markup=buttons
+        )
+        print("✅ Photo sent to admin")
+        await update.message.reply_text("📩 Screenshot sent to admin. You'll be notified after verification.")
+    except Exception as e:
+        print(f"❌ Error sending photo to admin: {e}")
+        await update.message.reply_text("❌ Failed to send screenshot to admin. Please try again later.")
+        return
+
     context.user_data["awaiting_activation"] = False
-
-    await update.message.reply_text("✅ Screenshot received.")
-	
-    print("📸 Screenshot received by handler")
+    await update.message.reply_text("✅ Screenshot received and is under review.")
+    print("📸 Screenshot handler completed")
 
 # Admin Approve
 async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
