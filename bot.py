@@ -407,34 +407,34 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Handle edit field=value from admin
     if context.user_data.get("awaiting_profile_edit"):
-        context.user_data["awaiting_profile_edit"] = False
-        target_id = context.user_data.get("edit_target")
+    context.user_data["awaiting_profile_edit"] = False
+    target_id = context.user_data.get("edit_target")
 
-        if "=" not in text:
-            await update.message.reply_text("❗ Invalid format. Use `field=value`.")
-            return
-
-        field, value = text.split("=", 1)
-        field = field.strip()
-        value = value.strip()
-
-        valid_fields = ["username", "wallet", "referral_code", "activation_status", "plus_referral_count"]
-
-        if field not in valid_fields:
-            await update.message.reply_text(f"❗ Invalid field. You can edit: {', '.join(valid_fields)}")
-            return
-
-        conn = sqlite3.connect(DB_NAME)
-        cur = conn.cursor()
-        try:
-            cur.execute(f"UPDATE users SET {field} = ? WHERE telegram_id = ?", (value, target_id))
-            conn.commit()
-            await update.message.reply_text(f"✅ `{field}` updated successfully for user `{target_id}`.", parse_mode="Markdown")
-        except Exception as e:
-            await update.message.reply_text(f"❗ Error: `{e}`", parse_mode="Markdown")
-        finally:
-            conn.close()
+    if "=" not in text:
+        await update.message.reply_text("❗ Invalid format. Use `field=value`.")
         return
+
+    field, value = text.split("=", 1)
+    field = field.strip()
+    value = value.strip()
+
+    valid_fields = ["username", "wallet", "referral_code", "activation_status", "plus_referral_count"]
+
+    if field not in valid_fields:
+        await update.message.reply_text(f"❗ Invalid field. You can edit: {', '.join(valid_fields)}")
+        return
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute(f"UPDATE users SET {field} = %s WHERE telegram_id = %s", (value, target_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        await update.message.reply_text(f"✅ `{field}` updated successfully for user `{target_id}`.", parse_mode="Markdown")
+    except Exception as e:
+        await update.message.reply_text(f"❗ Error: `{e}`", parse_mode="Markdown")
+    return
 
     # (continue with your existing menu logic here)
 
