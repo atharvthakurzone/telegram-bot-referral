@@ -726,15 +726,9 @@ if __name__ == "__main__":
 
     print("🤖 Bot is running with webhook...")
 
-async def main():
-    await app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path=TOKEN,
-        webhook_url=f"https://{RENDER_HOST}/{TOKEN}"
-    )
-
-# ✅ Python 3.13-safe event loop
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-loop.run_until_complete(main())
+app.run_webhook(
+    listen="0.0.0.0",
+    port=int(os.environ.get("PORT", 8443)),
+    url_path=TOKEN,
+    webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
+)
