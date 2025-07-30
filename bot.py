@@ -703,7 +703,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("approve", approve))
     app.add_handler(CommandHandler("id", my_id))
     app.add_handler(CallbackQueryHandler(handle_callback_query))
-    app.add_handler(conv_handler)
+    #app.add_handler(conv_handler)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
     app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
     app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
