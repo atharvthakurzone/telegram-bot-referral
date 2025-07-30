@@ -1,4 +1,4 @@
-python-telegram-bot==22.3
+python-telegram-bot[webhooks]==22.3
 requests==2.32.4
 # These may be included automatically, but are safe to keep
 anyio==4.9.0
