@@ -220,7 +220,7 @@ async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE):
             msg = "\n".join(lines)
         else:
             msg = f"👥 No referrals yet.\n🔗 Share your link:\n{link}"
-        await update.message.reply_text(msg, parse_mode="Markdown", reply_markup=back_menu)
+        await update.message.reply_text(msg, reply_markup=back_menu)
     else:
         await update.message.reply_text("❗ You are not registered. Use /start", reply_markup=start_menu)
 
