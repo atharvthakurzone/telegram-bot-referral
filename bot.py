@@ -692,12 +692,17 @@ app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
 app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
 
 # Start Botif __name__ == "__main__":
+if __name__ == "__main__":
+    import asyncio
+    from telegram import Bot
+
     async def setup_webhook():
         bot = Bot(token=TOKEN)
         webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
         await bot.set_webhook(webhook_url)
         print(f"✅ Webhook set to: {webhook_url}")
 
+    # Run webhook setup before starting the bot
     asyncio.run(setup_webhook())
 
     print("🤖 Bot is running with webhook...")
