@@ -689,50 +689,33 @@ async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Start Bot
 import asyncio
 
-async def main():
-    await app.run_webhook(
+if __name__ == "__main__":
+    async def setup():
+        await clear_webhook()
+
+    asyncio.run(setup())  # only for prep steps
+
+    app = ApplicationBuilder().token(TOKEN).build()
+
+    # All your handlers here
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("activate", activate))
+    app.add_handler(CommandHandler("approve", approve))
+    app.add_handler(CommandHandler("id", my_id))
+    app.add_handler(CallbackQueryHandler(handle_callback_query))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
+    app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
+    app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
+
+    # Your conv_handler as well
+    app.add_handler(conv_handler)
+
+    print("🤖 Bot is running with webhook...")
+
+    # ✅ DO NOT WRAP THIS in asyncio.run()
+    app.run_webhook(
         listen="0.0.0.0",
         port=int(os.environ.get("PORT", 8443)),
         url_path=TOKEN,
         webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
     )
-
-if __name__ == "__main__":
-    asyncio.run(clear_webhook())
-
-    app = ApplicationBuilder().token(TOKEN).build()
-
-    conv_handler = ConversationHandler(
-        entry_points=[
-            MessageHandler(filters.TEXT & filters.Regex("^📝 Register$"), handle_register),
-            MessageHandler(filters.TEXT & filters.Regex("^🔗 Register by Referrer$"), ask_referral)
-        ],
-        states={
-            ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_name)],
-            ASK_REFERRAL_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_referral_code)],
-            ASK_NAME_WITH_REFERRAL: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_name_with_referral)],
-            WAITING_FOR_SCREENSHOT: [MessageHandler(filters.PHOTO, handle_screenshot)]
-        },
-        fallbacks=[MessageHandler(filters.Regex("^(🔙 Back|🏠 Home)$"), cancel_referral)],
-    )
-
-    # 1. Commands
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("activate", activate))
-    app.add_handler(CommandHandler("approve", approve))
-    app.add_handler(CommandHandler("id", my_id))
-
-    # 2. Callback handlers
-    app.add_handler(CallbackQueryHandler(handle_callback_query))
-
-    # 3. Conversations
-    app.add_handler(conv_handler)
-
-    # 4. Messages
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
-    app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
-    app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
-
-    print("🤖 Bot is running with webhook...")
-
-    asyncio.run(main())  # ✅ properly awaits the async webhook
