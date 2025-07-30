@@ -695,7 +695,8 @@ app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
 app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
 app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
 
-# Start Botif __name__ == "__main__":
+# Start bot with webhook
+
 if __name__ == "__main__":
     print("🤖 Bot is running with webhook...")
     app.run_webhook(
