@@ -263,17 +263,17 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.user_data["awaiting_activation"] = True
 
-    # Always show cancel button
-        await update.message.reply_text(
-            "🙏 Kindly activate your account to start receiving earning benefits."
-        )
+    # Always show this message first
+    await update.message.reply_text(
+        "🙏 Kindly activate your account to start receiving earning benefits."
+    )
 
+    # Conditional button layout
     if payment_url:
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("💳 Pay ₹999 Now", url=payment_url)],
             [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
         ])
-
 
         await update.message.reply_text(
             "💳 To activate your account, click the button below to pay ₹999 securely and upload the screenshot.",
@@ -286,17 +286,17 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         await update.message.reply_text(
             "❌ Failed to generate payment link.\n"
-            "You can still continue by uploading your payment screenshot manually or contact admin.",
+            "You can still continue by uploading your payment screenshot manually or contact admin."
         )
 
-    # Always send instructions
+    # Always send final instructions + cancel button
     await update.message.reply_text(
         "📌 After completing payment:\n\n"
         "1. Take a screenshot of payment success.\n"
         "2. Upload it here for admin to verify.\n\n"
         "_Your account will be activated after manual verification._",
         parse_mode="Markdown",
-	reply_markup=keyboard
+        reply_markup=keyboard
     )
 
     print("User is now awaiting activation")
