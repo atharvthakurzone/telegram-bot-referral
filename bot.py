@@ -7,7 +7,7 @@ import asyncio
 from telegram.ext import ApplicationBuilder
 
 # Your handler imports here
-from handlers import *  # if applicable
+#from handlers import *  # if applicable
 from config import TOKEN
 
 from db import get_connection
