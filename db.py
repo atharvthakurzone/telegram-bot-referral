@@ -1,27 +1,31 @@
-import sqlite3
+import psycopg2
+import os
 import time
 
-DB_NAME = "referral_bot.db"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Initialize DB
+def get_connection():
+    return psycopg2.connect(DATABASE_URL)
+
+
 def init_db():
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
 
-    # Create users table if not exists
     cur.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            telegram_id INTEGER UNIQUE,
+            id SERIAL PRIMARY KEY,
+            telegram_id BIGINT UNIQUE,
             username TEXT,
             referral_code TEXT,
             referred_by TEXT,
             wallet INTEGER DEFAULT 0,
-            registered_on INTEGER,
+            registered_on BIGINT,
             earnings_days INTEGER DEFAULT 0,
             user_uid TEXT UNIQUE,
-            activation_status INTEGER DEFAULT 0,
-            banned INTEGER DEFAULT 0
+            activation_status BOOLEAN DEFAULT FALSE,
+            banned BOOLEAN DEFAULT FALSE,
+            plus_referral_count INTEGER DEFAULT 0
         )
     ''')
 
@@ -29,18 +33,17 @@ def init_db():
     conn.close()
 
 
-# Generate UID
 def generate_uid():
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
     cur.execute('SELECT COUNT(*) FROM users')
     count = cur.fetchone()[0] + 1
     conn.close()
     return str(749 + count)
 
-# Add User
+
 def add_user(telegram_id, username, referred_by):
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
 
     new_uid = generate_uid()
@@ -48,92 +51,89 @@ def add_user(telegram_id, username, referred_by):
     wallet = 100 if referred_by else 0
 
     cur.execute('''
-        INSERT OR IGNORE INTO users 
+        INSERT INTO users 
         (telegram_id, username, referral_code, referred_by, registered_on, user_uid, wallet)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (telegram_id) DO NOTHING
     ''', (telegram_id, username, new_uid, referred_by, registered_on, new_uid, wallet))
 
     if referred_by:
-        cur.execute('UPDATE users SET wallet = wallet + 100 WHERE referral_code = ?', (referred_by,))
+        cur.execute('UPDATE users SET wallet = wallet + 100 WHERE referral_code = %s', (referred_by,))
 
     conn.commit()
     conn.close()
     return new_uid
 
-# Get user by Telegram ID
+
 def get_user(telegram_id):
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
-    cur.execute('SELECT * FROM users WHERE telegram_id = ?', (telegram_id,))
+    cur.execute('SELECT * FROM users WHERE telegram_id = %s', (telegram_id,))
     user = cur.fetchone()
     conn.close()
     return user
 
-# Get user by UID
+
 def get_user_by_uid(user_uid):
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM users WHERE user_uid = ?", (user_uid,))
+    cur.execute("SELECT * FROM users WHERE user_uid = %s", (user_uid,))
     user = cur.fetchone()
     conn.close()
     return user
 
-# Get all users (Telegram IDs only)
+
 def get_all_users():
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
     cur.execute("SELECT telegram_id FROM users")
     users = [row[0] for row in cur.fetchall()]
     conn.close()
     return users
 
-# Count total users
+
 def count_users():
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM users")
     total = cur.fetchone()[0]
     conn.close()
     return total
 
-# Get referred users
+
 def get_referred_users(referral_code):
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
-    cur.execute('SELECT username, telegram_id, user_uid FROM users WHERE referred_by = ?', (referral_code,))
+    cur.execute('SELECT username, telegram_id, user_uid FROM users WHERE referred_by = %s', (referral_code,))
     users = cur.fetchall()
     conn.close()
     return users
 
-# Get profile info with extra fields
+
 def get_user_profile(telegram_id):
-    import time
-    import datetime
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
-    cur.execute('SELECT * FROM users WHERE telegram_id = ?', (telegram_id,))
+    cur.execute('SELECT * FROM users WHERE telegram_id = %s', (telegram_id,))
     user = cur.fetchone()
 
     if not user:
         conn.close()
         return None
 
-    real_count = len(get_referred_users(user[3]))
+    real_count = len(get_referred_users(user[4]))  # referred_by
     plus_count = user[11] if len(user) > 11 and user[11] is not None else 0
     referral_count = real_count + plus_count
 
-    # ✅ Auto-correct future registration date
     registered_on = user[6] or int(time.time())
     now = int(time.time())
     if registered_on > now:
-        print(f"⚠️ Future timestamp detected for user {telegram_id}: {registered_on} > {now}")
         registered_on = now
 
     days = int((now - registered_on) / 86400)
 
     referred_by_link = "N/A"
     if user[4]:
-        cur.execute("SELECT username, user_uid, telegram_id FROM users WHERE referral_code = ?", (str(user[4]),))
+        cur.execute("SELECT username, user_uid, telegram_id FROM users WHERE referral_code = %s", (str(user[4]),))
         result = cur.fetchone()
         if result:
             referred_by_link = {
@@ -155,49 +155,53 @@ def get_user_profile(telegram_id):
         "activation_status": user[9]
     }
 
-# Activation functions
+
 def activate_user(telegram_id):
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE users SET activation_status = 1 WHERE telegram_id = ?", (telegram_id,))
+    cur.execute("UPDATE users SET activation_status = TRUE WHERE telegram_id = %s", (telegram_id,))
     conn.commit()
     conn.close()
 
+
 def is_user_activated(telegram_id):
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT activation_status FROM users WHERE telegram_id = ?", (telegram_id,))
+    cur.execute("SELECT activation_status FROM users WHERE telegram_id = %s", (telegram_id,))
     result = cur.fetchone()
     conn.close()
-    return result[0] == 1 if result else False
+    return result[0] if result else False
 
-# Get all users with pending activation
+
 def get_pending_users():
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM users WHERE activation_status = 0")
+    cur.execute("SELECT * FROM users WHERE activation_status = FALSE")
     result = cur.fetchall()
     conn.close()
     return result
 
+
 def ban_user(telegram_id):
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE users SET banned = 1 WHERE telegram_id = ?", (telegram_id,))
+    cur.execute("UPDATE users SET banned = TRUE WHERE telegram_id = %s", (telegram_id,))
     conn.commit()
     conn.close()
+
 
 def unban_user(telegram_id):
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
-    cur.execute("UPDATE users SET banned = 0 WHERE telegram_id = ?", (telegram_id,))
+    cur.execute("UPDATE users SET banned = FALSE WHERE telegram_id = %s", (telegram_id,))
     conn.commit()
     conn.close()
 
+
 def is_user_banned(telegram_id):
-    conn = sqlite3.connect(DB_NAME)
+    conn = get_connection()
     cur = conn.cursor()
-    cur.execute("SELECT banned FROM users WHERE telegram_id = ?", (telegram_id,))
+    cur.execute("SELECT banned FROM users WHERE telegram_id = %s", (telegram_id,))
     result = cur.fetchone()
     conn.close()
-    return result[0] == 1 if result else False
+    return result[0] if result else False
