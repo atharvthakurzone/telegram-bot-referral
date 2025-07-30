@@ -1,6 +1,7 @@
 import sqlite3
 import datetime
 import re
+import os
 
 from cashfree import generate_payment_link
 
@@ -25,7 +26,7 @@ def escape_markdown(text: str) -> str:
     return re.sub(r'([_*\[\]()~`>#+\-=|{}.!\\])', r'\\\1', text)
 
 
-TOKEN = "8468870496:AAF1GPQ4jNXO6n6-Kk1FgLT6Nu7cvTPE7-o"
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 
 init_db()
