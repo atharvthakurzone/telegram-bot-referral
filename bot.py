@@ -290,49 +290,6 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     return WAITING_FOR_SCREENSHOT
 
-# async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     user = update.effective_user
-#     if not get_user(user.id):
-#         await update.message.reply_text("❗ You are not registered. Use /start")
-#         return
-
-#     if is_user_activated(user.id):
-#         await update.message.reply_text("✅ Your ID is already activated.")
-#         return
-
-#     context.user_data["awaiting_activation"] = True
-
-#     upi_link = "https://djearnbot.github.io/pay-now/"
-#     keyboard = InlineKeyboardMarkup([
-#         [InlineKeyboardButton("💳 Pay ₹999 Now", url=upi_link)],
-#         [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
-#     ])
-
-#     # ✅ Custom message before payment message
-#     await update.message.reply_text(
-#         "🙏 Kindly activate your account to start receiving earning benefits."
-#     )
-
-#     # Existing message about payment button
-#     await update.message.reply_text(
-#         "💳 To activate your account, click the button below to pay ₹999 via UPI and upload the screenshot.",
-#         reply_markup=keyboard
-#     )
-
-#     # UPI instructions
-#     await update.message.reply_text(
-#         "📌 If the button doesn't open UPI apps:\n\n"
-#         "• Open any UPI app (PhonePe, GPay, etc)\n"
-#         "• Send ₹999 to:\n`8287978793@ptyes`\n"
-#         "• UPI Name: DeepJadaun\n"
-#         "• Note: Account Activation\n\n"
-#         "Then upload the payment screenshot here.",
-#         parse_mode="Markdown"
-#     )
-
-#     return WAITING_FOR_SCREENSHOT
-
-
 # Screenshot Handler
 async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.user_data.get("awaiting_activation"):
