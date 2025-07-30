@@ -691,8 +691,15 @@ app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
 app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
 app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
 
-# Start Bot
-if __name__ == "__main__":
+# Start Botif __name__ == "__main__":
+    async def setup_webhook():
+        bot = Bot(token=TOKEN)
+        webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
+        await bot.set_webhook(webhook_url)
+        print(f"✅ Webhook set to: {webhook_url}")
+
+    asyncio.run(setup_webhook())
+
     print("🤖 Bot is running with webhook...")
     app.run_webhook(
         listen="0.0.0.0",
