@@ -686,34 +686,44 @@ async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(f"📤 Broadcast sent to {success}/{len(users)} users.")
 
-# Start Bot
-if __name__ == "__main__":
-    import asyncio
-
-    async def setup():
-        await clear_webhook()
-
-    asyncio.run(setup())  # Only to clear the webhook
-
+# Start Botasync def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # Add your handlers here
+    # Register handlers
+    conv_handler = ConversationHandler(
+        entry_points=[
+            MessageHandler(filters.TEXT & filters.Regex("^📝 Register$"), handle_register),
+            MessageHandler(filters.TEXT & filters.Regex("^🔗 Register by Referrer$"), ask_referral)
+        ],
+        states={
+            ASK_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_name)],
+            ASK_REFERRAL_CODE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_referral_code)],
+            ASK_NAME_WITH_REFERRAL: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_name_with_referral)],
+            WAITING_FOR_SCREENSHOT: [MessageHandler(filters.PHOTO, handle_screenshot)]
+        },
+        fallbacks=[MessageHandler(filters.Regex("^(🔙 Back|🏠 Home)$"), cancel_referral)],
+    )
+
+    # Add all handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("activate", activate))
     app.add_handler(CommandHandler("approve", approve))
     app.add_handler(CommandHandler("id", my_id))
     app.add_handler(CallbackQueryHandler(handle_callback_query))
-    #app.add_handler(conv_handler)
+    app.add_handler(conv_handler)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
     app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
     app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
 
     print("🤖 Bot is running with webhook...")
 
-    # 🚫 DO NOT wrap this in asyncio.run
-    app.run_webhook(
+    # Webhook config
+    await app.run_webhook(
         listen="0.0.0.0",
         port=int(os.environ.get("PORT", 8443)),
         url_path=TOKEN,
         webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
     )
+
+if __name__ == "__main__":
+    asyncio.run(main())
