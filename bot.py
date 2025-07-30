@@ -708,7 +708,7 @@ app.add_handler(CallbackQueryHandler(handle_callback_query))
 app.add_handler(conv_handler)
 
     # 4. Messages
-app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
+#app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
 app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
 
