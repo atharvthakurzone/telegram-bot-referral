@@ -25,7 +25,7 @@ from db import is_user_banned
 
 # Set up webhook
 PORT = int(os.environ.get('PORT', 8443))  # Render sets the PORT environment variable
-app.run_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN)
+#app.run_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN)
 
 def escape_markdown(text: str) -> str:
     return re.sub(r'([_*\[\]()~`>#+\-=|{}.!\\])', r'\\\1', text)
