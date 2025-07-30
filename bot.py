@@ -687,7 +687,10 @@ async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"📤 Broadcast sent to {success}/{len(users)} users.")
 
 # Start Bot
-app.run_webhook(
+import asyncio
+
+async def main():
+    await app.run_webhook(
         listen="0.0.0.0",
         port=int(os.environ.get("PORT", 8443)),
         url_path=TOKEN,
@@ -696,7 +699,7 @@ app.run_webhook(
 
 if __name__ == "__main__":
     asyncio.run(clear_webhook())
-    
+
     app = ApplicationBuilder().token(TOKEN).build()
 
     conv_handler = ConversationHandler(
@@ -732,4 +735,4 @@ if __name__ == "__main__":
 
     print("🤖 Bot is running with webhook...")
 
-    asyncio.run(main())
+    asyncio.run(main())  # ✅ properly awaits the async webhook
