@@ -711,15 +711,22 @@ conv_handler = ConversationHandler(
 )
 
 # Register all handlers
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("activate", activate))
-app.add_handler(CommandHandler("approve", approve))
-app.add_handler(CommandHandler("id", my_id))
-app.add_handler(CallbackQueryHandler(handle_callback_query))
-app.add_handler(conv_handler)
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
-app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
-app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
+    # 1. Commands
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("activate", activate))
+    app.add_handler(CommandHandler("approve", approve))
+    app.add_handler(CommandHandler("id", my_id))  # ✅ Fixed typo here
+
+    # 2. Callback handlers
+    app.add_handler(CallbackQueryHandler(handle_callback_query))
+
+    # 3. Conversations
+    app.add_handler(conv_handler)
+
+    # 4. Messages
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
+    app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
+    app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
 
 # Start Bot
 if __name__ == "__main__":
