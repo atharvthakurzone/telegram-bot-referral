@@ -264,7 +264,7 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["awaiting_activation"] = True
 
     # Always show cancel button
-	await update.message.reply_text(
+        await update.message.reply_text(
             "🙏 Kindly activate your account to start receiving earning benefits."
         )
 
