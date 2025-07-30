@@ -4,6 +4,7 @@ import os
 import requests
 import asyncio
 
+from db import get_connection
 
 from cashfree import generate_payment_link
 
@@ -72,23 +73,13 @@ def log_action(action: str, actor_id: int, target_id=None, details=None):
         f.write(log_msg + "\n")
         
 def add_plus_referral_column():
-    conn = sqlite3.connect("referral_bot.db")
-    cur = conn.cursor()
-
-    # Get list of all columns in the users table
-    cur.execute("PRAGMA table_info(users)")
-    columns = [row[1] for row in cur.fetchall()]
-
-    # Only add column if it doesn't exist
-    if "plus_referral_count" not in columns:
-        cur.execute("ALTER TABLE users ADD COLUMN plus_referral_count INTEGER DEFAULT 0")
-   #     print("✅ Column 'plus_referral_count' added.")
-    else:
-        # You can safely suppress this or log it as info
-        pass  # Column already exists, do nothing
-
-    conn.commit()
-    conn.close()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS plus_referral_count INTEGER DEFAULT 0
+            """)
+            conn.commit()
 
 # Run this ONCE at startup
 add_plus_referral_column()
