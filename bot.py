@@ -297,16 +297,17 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("📸 handle_screenshot triggered")
 
-    if not context.user_data.get("awaiting_activation"):
-        print("⛔ Not awaiting activation")
-        return
-
     user = update.effective_user
 
     if not update.message.photo:
         print("❗ No photo found in message")
         await update.message.reply_text("❗ Please upload a valid payment screenshot.")
         return
+
+    if not context.user_data.get("awaiting_activation"):
+        print("⛔ Not awaiting activation, but proceeding anyway")
+        await update.message.reply_text("⚠️ No activation session detected, but your screenshot was received.")
+
 
     # Get user info from DB
     user_data = get_user(user.id)
