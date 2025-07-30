@@ -1,10 +1,10 @@
 services:
-  - type: web
+  - type: worker  # ← ✅ WAS: `web`, now `worker`
     name: telegram-referral-bot
     env: python
+    pythonVersion: 3.11
     buildCommand: pip install -r requirements.txt
     startCommand: python bot.py
-    pythonVersion: 3.11  # ✅ Add this line
     envVars:
       - key: TELEGRAM_BOT_TOKEN
         fromEnvVar: TELEGRAM_BOT_TOKEN
