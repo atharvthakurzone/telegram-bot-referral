@@ -26,8 +26,8 @@ from db import (
 from db import is_user_banned
 
 from telegram import Bot
-import asyncio
 
+RENDER_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 CASHFREE_APP_ID = os.getenv("CASHFREE_APP_ID")
 CASHFREE_SECRET_KEY = os.getenv("CASHFREE_SECRET_KEY")
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -44,7 +44,7 @@ asyncio.run(clear_webhook())
 
 
 # Set up webhook
-#PORT = int(os.environ.get('PORT', 8443))  # Render sets the PORT environment variable
+PORT = int(os.environ.get("PORT", 8443))  # Render sets the PORT environment variable
 #app.run_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN)
 
 def escape_markdown(text: str) -> str:
@@ -724,7 +724,14 @@ if __name__ == "__main__":
     app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
     app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
 
-    print("🤖 Bot is running...")
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(app.run_polling())
+    print("🤖 Bot is running with webhook...")
+
+    async def main():
+    await app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=TOKEN,
+        webhook_url=f"https://{RENDER_HOST}/{TOKEN}"
+    )
+
+    asyncio.run(main())
