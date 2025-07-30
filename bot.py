@@ -713,6 +713,7 @@ app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
 app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
 
 # Start bot with webhook
+app.add_handler(RawLoggerHandler())
 
 if __name__ == "__main__":
     print("🤖 Bot is running with webhook...")
@@ -732,5 +733,3 @@ class RawLoggerHandler(BaseHandler):
 
     async def handle_update(self, update, dispatcher):
         print(f"📩 Raw update: {update}")
-
-app.add_handler(RawLoggerHandler())
