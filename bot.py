@@ -304,17 +304,20 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❗ Please upload a valid payment screenshot.")
         return
 
-    if not context.user_data.get("awaiting_activation"):
-        print("⛔ Not awaiting activation, but proceeding anyway")
-        #await update.message.reply_text("⚠️ No activation session detected, but your screenshot was received.")
-
-
     # Get user info from DB
     user_data = get_user(user.id)
     if not user_data:
         print(f"❗ User {user.id} not found in DB")
         await update.message.reply_text("❗ You are not registered.")
         return
+
+    if is_user_activated(user.id):
+        print(f"⛔ User {user.id} is already activated — ignoring screenshot")
+        await update.message.reply_text("✅ Your account is already activated. No need to upload a screenshot.")
+        return
+
+    if not context.user_data.get("awaiting_activation"):
+        print("⚠️ Not awaiting activation, but continuing...")
 
     uid = user_data[8]  # user_uid
     username = user_data[2] or "Unnamed"
