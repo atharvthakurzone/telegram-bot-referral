@@ -263,6 +263,7 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.user_data["awaiting_activation"] = True
 
+    # Always show cancel button
     if payment_url:
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("💳 Pay ₹999 Now", url=payment_url)],
@@ -278,12 +279,17 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=keyboard
         )
     else:
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
+        ])
+
         await update.message.reply_text(
             "⚠️ Failed to generate payment link.\n"
-            "You can still continue by uploading your payment screenshot manually."
+            "You can still continue by uploading your payment screenshot manually or contact admin.",
+            reply_markup=keyboard
         )
 
-    # Always send these instructions
+    # Always send instructions
     await update.message.reply_text(
         "📌 After completing payment:\n\n"
         "1. Take a screenshot of payment success.\n"
