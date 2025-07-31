@@ -149,16 +149,21 @@ def distribute_daily_income_once():
         print(u)
 	    
     for telegram_id in users:
+	print(f"➡️ Checking user: {telegram_id}")
+	    
         if not is_user_activated(telegram_id):
+	    print(f"⛔ Not activated: {telegram_id}")
             continue  # Skip inactive users
 		
         user = get_user(telegram_id)
         if not user:
+	    print(f"❌ User not found: {telegram_id}")
             continue
 
         plan = user[9] or "Basic"  
         wallet = user[5]           
         daily_income = PLAN_BENEFITS.get(plan, {}).get("daily_income", 0)
+	print(f"📊 User: {telegram_id}, Plan: {plan}, Wallet: ₹{wallet}, Income: ₹{daily_income}")
 
         if daily_income > 0:
             new_wallet = wallet + daily_income
