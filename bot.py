@@ -148,8 +148,7 @@ def distribute_daily_income_once():
     for u in users[:5]:
         print(u)
 	    
-    for row in users:
-        telegram_id = row[0]  # extract actual telegram_id
+    for telegram_id in users:
         user = get_user(telegram_id)
         if not user:
             continue
