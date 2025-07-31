@@ -42,6 +42,8 @@ ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 
 init_db()
 
+ASK_MOBILE = range(1000, 1001)
+
 async def clear_webhook():
     bot = Bot(token=TOKEN)
     await bot.delete_webhook(drop_pending_updates=True)
@@ -261,12 +263,10 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.user_data["awaiting_activation"] = True
 
-    # Always show this message first
     await update.message.reply_text(
         "🙏 Kindly activate your account to start receiving earning benefits."
     )
 
-    # Conditional button layout
     if payment_url:
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("💳 Pay ₹999 Now", url=payment_url)],
@@ -277,29 +277,29 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "💳 To activate your account, click the button below to pay ₹999 securely and upload the screenshot.",
             reply_markup=keyboard
         )
-    else:
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
-        ])
 
         await update.message.reply_text(
-            "❌ Failed to generate payment link.\n"
-            "You can still continue by uploading your payment screenshot manually or contact admin."
+            "📌 After completing payment:\n\n"
+            "1. Take a screenshot of payment success.\n"
+            "2. Upload it here for admin to verify.\n\n"
+            "_Your account will be activated after manual verification._",
+            parse_mode="Markdown",
+            reply_markup=keyboard
         )
 
-    # Always send final instructions + cancel button
-    await update.message.reply_text(
-        "📌 After completing payment:\n\n"
-        "1. Take a screenshot of payment success.\n"
-        "2. Upload it here for admin to verify.\n\n"
-        "_Your account will be activated after manual verification._",
-        parse_mode="Markdown",
-        reply_markup=keyboard
-    )
+        return WAITING_FOR_SCREENSHOT
 
-    print("User is now awaiting activation")
-    return WAITING_FOR_SCREENSHOT
+    # Payment link failed – fallback flow
+    plan_keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Basic ₹1499", callback_data="plan_basic")],
+        [InlineKeyboardButton("Plus ₹4499", callback_data="plan_plus")],
+        [InlineKeyboardButton("Elite ₹9500", callback_data="plan_elite")],
+        [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
+    ])
 
+    await update.message.reply_text("Please select the plan below to activate your account", reply_markup=plan_keyboard)
+    return ConversationHandler.END  # actual handling will continue via callback
+	
 # Screenshot Handler
 async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("📸 handle_screenshot triggered")
