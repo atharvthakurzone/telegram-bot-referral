@@ -42,18 +42,6 @@ ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 
 init_db()
 
-def add_plan_column_once():
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'Basic'
-            """)
-            conn.commit()
-
-add_plan_column_once()
-
-
 ASK_MOBILE = range(1000, 1001)
 manual_payment_requests = {}  # Stores user payment details for admin use
 
@@ -787,7 +775,15 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         user = get_user_by_uid(uid)
         if user:
             activate_user(user[1])  # Activate the user normally
-            # Add logic to store their plan in DB if needed
+            # Update user plan in DB
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute("UPDATE users SET plan = %s WHERE telegram_id = %s", (plan, user[1]))
+            conn.commit()
+            cur.close()
+            conn.close()
+
+	
             await context.bot.send_message(chat_id=user[1], text=f"✅ Your account has been activated with the *{plan}* plan!")
             await query.edit_message_caption(
                 caption=f"✅ Approved with {plan} Plan!\n\n{query.message.caption}",
