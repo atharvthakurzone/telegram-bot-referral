@@ -440,7 +440,7 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❗ You are not registered.")
             return
 
-	if update.effective_user.id in manual_payment_requests:
+        if update.effective_user.id in manual_payment_requests:
             manual_payment_requests[update.effective_user.id]["mobile"] = mobile
 
         selected_plan = context.user_data.get("selected_plan", {})
