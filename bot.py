@@ -389,6 +389,35 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if is_user_banned(update.effective_user.id):
         await update.message.reply_text("🚫 You are banned from using this bot.")
         return
+	    
+        # 🔗 Admin is expected to send a payment link to a user
+    if context.user_data.get("awaiting_payment_link_for"):
+        target_id = context.user_data["awaiting_payment_link_for"]
+        del context.user_data["awaiting_payment_link_for"]
+
+        selected_plan = context.user_data.get("selected_plan", {})
+        plan_name = selected_plan.get("name", "your selected")
+        plan_amount = selected_plan.get("amount", "the selected")
+
+        message_text = update.message.text.strip()
+
+        if not message_text.startswith("http"):
+            await update.message.reply_text("❗ Please send a valid payment *link* (starting with http).", parse_mode="Markdown")
+            return
+
+        try:
+            await context.bot.send_message(
+                chat_id=target_id,
+                text=(
+                    f"💳 Please use the link below to make the payment for the *{plan_name}* plan (₹{plan_amount}):\n\n"
+                    f"{message_text}"
+                ),
+                parse_mode="Markdown"
+            )
+            await update.message.reply_text("✅ Payment link forwarded to user.")
+        except Exception as e:
+            await update.message.reply_text(f"❌ Failed to send link: `{e}`", parse_mode="Markdown")
+        return
 
     # Get the text early
     text = update.message.text.strip()
