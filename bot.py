@@ -410,7 +410,7 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 chat_id=target_id,
                 text=(
                     f"💳 Please use the link below to make the payment for your selected plan "
-                    f"(*{plan['name']} – ₹{plan['amount']}*):\n\n"
+                    f"(*{plan_name} – ₹{plan_amount}*):\n\n"
                     f"{message_text}"
                 ),
                 parse_mode="Markdown"
