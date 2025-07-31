@@ -401,8 +401,8 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         message_text = update.message.text.strip()
 
-        if not message_text.startswith("http"):
-            await update.message.reply_text("❗ Please send a valid payment *link* (starting with http).", parse_mode="Markdown")
+        if not message_text.startswith("https"):
+            await update.message.reply_text("❗ Please send a valid payment *link* (starting with https).", parse_mode="Markdown")
             return
 
         try:
