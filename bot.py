@@ -343,7 +343,7 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [
             InlineKeyboardButton("✅ Basic", callback_data=f"approve_basic:{uid}"),
 	    InlineKeyboardButton("👑 Elite", callback_data=f"approve_plus:{uid}"),
-	]		
+	],		
         [
             InlineKeyboardButton("👑 Elite", callback_data=f"approve_elite:{uid}"),
             InlineKeyboardButton("❌ Reject", callback_data=f"reject:{uid}")
