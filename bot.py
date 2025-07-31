@@ -744,6 +744,8 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             await query.message.reply_text("⚠️ Invalid plan selected. Please try again.")
             return
 
+	telegram_id = query.from_user.id
+
         manual_payment_requests[telegram_id] = {
             "name": plan_name,
             "amount": plan_amount
