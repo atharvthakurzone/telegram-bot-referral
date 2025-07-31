@@ -413,8 +413,8 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 text=(
                     f"💳 Please use the link below to make the payment for your selected plan "
                     f"(*{plan_name} – ₹{plan_amount}*).\n\n"
-                    f"{message_text}"
-		    f"This link has also been shared to your mobile number: `{mobile}`\n\n"
+                    f"🔗 {message_text}\n\n"
+		    f"This link has also been shared to your mobile number: `{mobile}`"
                 ),
                 parse_mode="Markdown"
             )
