@@ -585,9 +585,7 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     else:
         await update.message.reply_text("❓ Unknown option. Use /start", reply_markup=start_menu)
-        
-        
-        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
 
 async def search_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["awaiting_user_search"] = False
