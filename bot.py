@@ -341,7 +341,11 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     buttons = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("✅ Approve", callback_data=f"approve:{uid}"),
+            InlineKeyboardButton("✅ Basic", callback_data=f"approve_basic:{uid}"),
+	    InlineKeyboardButton("👑 Elite", callback_data=f"approve_plus:{uid}"),
+	]		
+        [
+            InlineKeyboardButton("👑 Elite", callback_data=f"approve_elite:{uid}"),
             InlineKeyboardButton("❌ Reject", callback_data=f"reject:{uid}")
         ]
     ])
@@ -765,6 +769,22 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         context.user_data["awaiting_payment_link_for"] = target_id
         await query.message.reply_text("✉️ Please send the payment link to forward to the user.")
 
+    elif data.startswith("approve_basic:") or data.startswith("approve_plus:") or data.startswith("approve_elite:"):
+    plan = data.split(":")[0].replace("approve_", "").capitalize()
+    uid = data.split(":")[1]
+    user = get_user_by_uid(uid)
+    if user:
+        activate_user(user[1])  # Activate the user normally
+        # Add logic to store their plan in DB if needed
+        await context.bot.send_message(chat_id=user[1], text=f"✅ Your account has been activated with the *{plan}* plan!")
+        await query.edit_message_caption(
+            caption=f"✅ Approved with {plan} Plan!\n\n{query.message.caption}",
+            reply_markup=None
+        )
+    else:
+        await query.edit_message_reply_markup(reply_markup=None)
+        await query.message.reply_text("❌ User not found.")
+
 
 #Pending account activation	
 async def show_pending_activations(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -772,7 +792,7 @@ async def show_pending_activations(update: Update, context: ContextTypes.DEFAULT
     if not users:
         await update.message.reply_text("✅ No pending activations.")
         return
-    for user in users[:5]:  # Show top 5
+    for user in users[:5]:
         uid = user[8]
         telegram_id = user[1]
         username = user[2] or "Unnamed"
@@ -784,7 +804,9 @@ async def show_pending_activations(update: Update, context: ContextTypes.DEFAULT
             ]
         ])
         await update.message.reply_text(msg, reply_markup=buttons)
-        
+
+
+#Hnadle Broadcast Messages
 async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("📢 handle_broadcast triggered")
     if not context.user_data.get("awaiting_broadcast"):
