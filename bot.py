@@ -571,7 +571,8 @@ async def search_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ])
 
     await update.message.reply_text(text, reply_markup=keyboard, parse_mode="Markdown")
-    
+
+#Callback query
 async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -646,7 +647,41 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             "✏️ What would you like to update?\nSend in this format:\n`field=value`\n\nExample: `wallet=500`",
             parse_mode="Markdown"
         )
-	
+
+        # 👇 Plan selected by user after payment link failure
+    elif data.startswith("plan_"):
+        plan_map = {
+            "plan_basic": ("Basic", 1499),
+            "plan_plus": ("Plus", 4499),
+            "plan_elite": ("Elite", 9500)
+        }
+        plan_key = data
+        plan_name, plan_amount = plan_map.get(plan_key, ("Unknown", 0))
+
+        if plan_name == "Unknown":
+        await query.message.reply_text("⚠️ Invalid plan selected. Please try again.")
+        return
+
+        context.user_data["selected_plan"] = {
+            "name": plan_name,
+            "amount": plan_amount
+        }
+        context.user_data["awaiting_mobile_number"] = True
+
+        await query.edit_message_reply_markup(reply_markup=None)
+        await query.message.reply_text(
+            f"📱 Please enter your mobile number to receive the payment link for the *{plan_name}* plan (₹{plan_amount}).",
+            parse_mode="Markdown"
+        )
+
+    # 👇 Admin clicked "Send payment link"
+    elif data.startswith("sendlink_"):
+        target_id = int(data.split("_")[1])
+        context.user_data["awaiting_payment_link_for"] = target_id
+        await query.message.reply_text("✉️ Please send the payment link to forward to the user.")
+
+
+#Pending account activation	
 async def show_pending_activations(update: Update, context: ContextTypes.DEFAULT_TYPE):
     users = get_pending_users()
     if not users:
