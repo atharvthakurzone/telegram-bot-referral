@@ -417,7 +417,7 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     buttons = InlineKeyboardMarkup([
         [
             InlineKeyboardButton("✅ Basic", callback_data=f"approve_basic:{uid}"),
-	    InlineKeyboardButton("👑 Elite", callback_data=f"approve_plus:{uid}"),
+	    InlineKeyboardButton("💎 Plus", callback_data=f"approve_plus:{uid}"),
 	],		
         [
             InlineKeyboardButton("👑 Elite", callback_data=f"approve_elite:{uid}"),
