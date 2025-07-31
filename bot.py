@@ -42,6 +42,18 @@ ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 
 init_db()
 
+def add_plan_column_once():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'Basic'
+            """)
+            conn.commit()
+
+add_plan_column_once()
+
+
 ASK_MOBILE = range(1000, 1001)
 manual_payment_requests = {}  # Stores user payment details for admin use
 
