@@ -770,20 +770,20 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await query.message.reply_text("✉️ Please send the payment link to forward to the user.")
 
     elif data.startswith("approve_basic:") or data.startswith("approve_plus:") or data.startswith("approve_elite:"):
-    plan = data.split(":")[0].replace("approve_", "").capitalize()
-    uid = data.split(":")[1]
-    user = get_user_by_uid(uid)
-    if user:
-        activate_user(user[1])  # Activate the user normally
-        # Add logic to store their plan in DB if needed
-        await context.bot.send_message(chat_id=user[1], text=f"✅ Your account has been activated with the *{plan}* plan!")
-        await query.edit_message_caption(
-            caption=f"✅ Approved with {plan} Plan!\n\n{query.message.caption}",
-            reply_markup=None
-        )
-    else:
-        await query.edit_message_reply_markup(reply_markup=None)
-        await query.message.reply_text("❌ User not found.")
+        plan = data.split(":")[0].replace("approve_", "").capitalize()
+        uid = data.split(":")[1]
+        user = get_user_by_uid(uid)
+        if user:
+            activate_user(user[1])  # Activate the user normally
+            # Add logic to store their plan in DB if needed
+            await context.bot.send_message(chat_id=user[1], text=f"✅ Your account has been activated with the *{plan}* plan!")
+            await query.edit_message_caption(
+                caption=f"✅ Approved with {plan} Plan!\n\n{query.message.caption}",
+                reply_markup=None
+            )
+        else:
+            await query.edit_message_reply_markup(reply_markup=None)
+            await query.message.reply_text("❌ User not found.")
 
 
 #Pending account activation	
