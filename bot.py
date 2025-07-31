@@ -34,6 +34,24 @@ from db import is_user_banned
 
 from telegram import Bot
 
+PLAN_BENEFITS = {
+    "Basic": {
+        "daily_income": 100,
+        "weekly_bonus": 250,
+        "referral_bonus": 150
+    },
+    "Plus": {
+        "daily_income": 300,
+        "weekly_bonus": 600,
+        "referral_bonus": 450
+    },
+    "Elite": {
+        "daily_income": 700,
+        "weekly_bonus": 1200,
+        "referral_bonus": 950
+    }
+}
+
 RENDER_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 CASHFREE_APP_ID = os.getenv("CASHFREE_APP_ID")
 CASHFREE_SECRET_KEY = os.getenv("CASHFREE_SECRET_KEY")
@@ -88,6 +106,19 @@ def add_plus_referral_column():
 
 # Run this ONCE at startup
 add_plus_referral_column()
+
+def get_daily_income(plan: str) -> int:
+    return PLAN_BENEFITS.get(plan, {}).get("daily_income", 0)
+user = get_user(telegram_id)
+if user and user[1]:  # user[1] = telegram_id, assuming user[9] is plan
+    plan = user[9] or "Basic"  # fallback to Basic
+    daily_income = get_daily_income(plan)
+    # now update wallet:
+    new_balance = user[5] + daily_income  # user[5] = wallet
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE users SET wallet = %s WHERE telegram_id = %s", (new_balance, telegram_id))
+            conn.commit()
 
 # Reply Keyboards
 start_menu = ReplyKeyboardMarkup(
@@ -182,11 +213,22 @@ async def handle_name_with_referral(update: Update, context: ContextTypes.DEFAUL
     referrer = get_user_by_uid(referred_by)
     if referrer:
         referrer_id = referrer[1]
+        referrer_plan = referrer[9] or "Basic"
+        ref_bonus = PLAN_BENEFITS.get(referrer_plan, {}).get("referral_bonus", 0)
+
+# Add bonus to wallet
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE users SET wallet = wallet + %s WHERE telegram_id = %s", (ref_bonus, referrer[1]))
+                conn.commit()
+
         ref_msg = (
             f"🎉 Congratulations! "
             f"[{username}](tg://user?id={user.id}) (UID: {new_uid}) "
-            f"has joined using your referral code and you've been rewarded with ₹100!"
+            f"has joined using your referral code.\n"
+            f"You’ve been rewarded with ₹{ref_bonus} as a *{referrer_plan}* user!"
         )
+
         await context.bot.send_message(referrer_id, ref_msg, parse_mode="Markdown")
     await update.message.reply_text("✅ You’ve been registered with a referral!", reply_markup=main_menu)
     return ConversationHandler.END
