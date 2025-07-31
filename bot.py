@@ -393,6 +393,54 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Get the text early
     text = update.message.text.strip()
 
+        # Step: User submitting mobile number for manual payment
+    if context.user_data.get("awaiting_mobile_number"):
+        context.user_data["awaiting_mobile_number"] = False
+        mobile = text.strip()
+
+        if not mobile.isdigit() or len(mobile) != 10:
+            await update.message.reply_text("❗ Please enter a valid 10-digit mobile number.")
+            return
+
+        user = get_user(update.effective_user.id)
+        if not user:
+            await update.message.reply_text("❗ You are not registered.")
+            return
+
+        selected_plan = context.user_data.get("selected_plan", {})
+        plan_name = selected_plan.get("name", "Unknown")
+        plan_amount = selected_plan.get("amount", 0)
+
+        uid = user[8]
+        username = user[2] or "Unnamed"
+        telegram_id = user[1]
+
+        # Prepare admin message
+        caption = (
+            f"🧾 *Manual Activation Request*\n\n"
+            f"🆔 UID: `{uid}`\n"
+            f"👤 Username: {username}\n"
+            f"📱 Telegram ID: `{telegram_id}`\n"
+            f"💳 Plan: *{plan_name}* (₹{plan_amount})\n"
+            f"📞 Mobile: `{mobile}`"
+        )
+
+        button = InlineKeyboardMarkup([
+            [InlineKeyboardButton("📤 Send Payment Link", callback_data=f"sendlink_{telegram_id}")]
+        ])
+
+        await context.bot.send_message(
+            chat_id=ADMIN_CHAT_ID,
+            text=caption,
+            parse_mode="Markdown",
+            reply_markup=button
+        )
+
+        await update.message.reply_text(
+            "✅ Thank you for sharing the mobile number. Payment link will be shared with you in the next 15 minutes."
+        )
+        return
+
     # Handle edit field=value from admin
     if context.user_data.get("awaiting_profile_edit"):
         context.user_data["awaiting_profile_edit"] = False
