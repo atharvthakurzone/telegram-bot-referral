@@ -142,6 +142,12 @@ PLAN_BENEFITS = {
 
 def distribute_daily_income_once():
     users = get_all_users()  
+	
+    # 🔍 Debug: Check what get_all_users() returns
+    print("🔍 Sample users from get_all_users():")
+    for u in users[:5]:
+        print(u)
+	    
     for row in users:
         telegram_id = row[0]  # extract actual telegram_id
         user = get_user(telegram_id)
