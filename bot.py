@@ -4,6 +4,8 @@ import os
 import requests
 import asyncio
 import sys
+import time
+
 
 sys.stdout.reconfigure(line_buffering=True)
 
@@ -61,6 +63,23 @@ webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
 #requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}")
 
 ASK_NAME, ASK_REFERRAL_CODE, ASK_NAME_WITH_REFERRAL, WAITING_FOR_SCREENSHOT = range(4)
+
+#Daily Income Scheduler
+async def schedule_daily_income():
+    while True:
+        now = datetime.datetime.now()
+        target = now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
+        wait_seconds = (target - now).total_seconds()
+
+        print(f"⏳ Waiting {int(wait_seconds)} seconds until next daily income...")
+        await asyncio.sleep(wait_seconds)
+
+        try:
+            distribute_daily_income_once()
+            print("✅ Daily income distributed.")
+        except Exception as e:
+            print(f"❌ Error distributing daily income: {e}")
+		
 
 def log_action(action: str, actor_id: int, target_id=None, details=None):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -895,6 +914,9 @@ async def setup_webhook(app):
     webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
     await app.bot.set_webhook(webhook_url)
     print(f"✅ Webhook set to: {webhook_url}")
+
+# ✅ Start the daily income scheduler
+    asyncio.create_task(schedule_daily_income())
 
 app = ApplicationBuilder().token(TOKEN).post_init(setup_webhook).build()
 
