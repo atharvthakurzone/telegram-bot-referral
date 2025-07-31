@@ -149,6 +149,9 @@ def distribute_daily_income_once():
         print(u)
 	    
     for telegram_id in users:
+        if not is_user_activated(telegram_id):
+            continue  # Skip inactive users
+		
         user = get_user(telegram_id)
         if not user:
             continue
