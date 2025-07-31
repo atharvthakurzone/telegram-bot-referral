@@ -43,6 +43,7 @@ ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 init_db()
 
 ASK_MOBILE = range(1000, 1001)
+manual_payment_requests = {}  # Stores user payment details for admin use
 
 async def clear_webhook():
     bot = Bot(token=TOKEN)
@@ -395,9 +396,10 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         target_id = context.user_data["awaiting_payment_link_for"]
         del context.user_data["awaiting_payment_link_for"]
 
-        selected_plan = context.user_data.get("selected_plan", {})
-        plan_name = selected_plan.get("name", "your selected")
-        plan_amount = selected_plan.get("amount", "the selected")
+        selected_plan = manual_payment_requests.get(target_id, {})
+        plan_name = selected_plan.get("name", "Unknown")
+        plan_amount = selected_plan.get("amount", 0)
+        mobile = selected_plan.get("mobile", "N/A")
 
         message_text = update.message.text.strip()
 
@@ -410,8 +412,9 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 chat_id=target_id,
                 text=(
                     f"💳 Please use the link below to make the payment for your selected plan "
-                    f"(*{plan_name} – ₹{plan_amount}*):\n\n"
+                    f"(*{plan_name} – ₹{plan_amount}*).\n\n"
                     f"{message_text}"
+		    f"This link has also been shared to your mobile number: `{mobile}`\n\n"
                 ),
                 parse_mode="Markdown"
             )
@@ -738,9 +741,10 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             await query.message.reply_text("⚠️ Invalid plan selected. Please try again.")
             return
 
-        context.user_data["selected_plan"] = {
+        manual_payment_requests[telegram_id] = {
             "name": plan_name,
-            "amount": plan_amount
+            "amount": plan_amount,
+	    "mobile": mobile
         }
         context.user_data["awaiting_mobile_number"] = True
 
