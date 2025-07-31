@@ -440,6 +440,9 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❗ You are not registered.")
             return
 
+	if update.effective_user.id in manual_payment_requests:
+            manual_payment_requests[update.effective_user.id]["mobile"] = mobile
+
         selected_plan = context.user_data.get("selected_plan", {})
         plan_name = selected_plan.get("name", "Unknown")
         plan_amount = selected_plan.get("amount", 0)
@@ -743,8 +746,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
 
         manual_payment_requests[telegram_id] = {
             "name": plan_name,
-            "amount": plan_amount,
-	    "mobile": mobile
+            "amount": plan_amount
         }
         context.user_data["awaiting_mobile_number"] = True
 
