@@ -65,20 +65,32 @@ webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
 ASK_NAME, ASK_REFERRAL_CODE, ASK_NAME_WITH_REFERRAL, WAITING_FOR_SCREENSHOT = range(4)
 
 #Daily Income Scheduler
+#async def schedule_daily_income():
+ #   while True:
+  #      now = datetime.datetime.now()
+   #     target = now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
+    #    wait_seconds = (target - now).total_seconds()
+#
+ #       print(f"⏳ Waiting {int(wait_seconds)} seconds until next daily income...")
+  #      await asyncio.sleep(wait_seconds)
+#
+ #       try:
+  #          distribute_daily_income_once()
+   #         print("✅ Daily income distributed.")
+    #    except Exception as e:
+     #       print(f"❌ Error distributing daily income: {e}")
+
+# TEST VERSION: runs every 60 seconds
 async def schedule_daily_income():
     while True:
-        now = datetime.datetime.now()
-        target = now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
-        wait_seconds = (target - now).total_seconds()
-
-        print(f"⏳ Waiting {int(wait_seconds)} seconds until next daily income...")
-        await asyncio.sleep(wait_seconds)
+        print("⏳ Test: Distributing income in 60 seconds...")
+        await asyncio.sleep(60)  # Run every 1 minute
 
         try:
             distribute_daily_income_once()
-            print("✅ Daily income distributed.")
+            print("✅ Test: Daily income distributed.")
         except Exception as e:
-            print(f"❌ Error distributing daily income: {e}")
+            print(f"❌ Test: Error distributing daily income: {e}")
 		
 
 def log_action(action: str, actor_id: int, target_id=None, details=None):
