@@ -142,7 +142,8 @@ PLAN_BENEFITS = {
 
 def distribute_daily_income_once():
     users = get_all_users()  
-    for telegram_id in users:
+    for row in users:
+        telegram_id = row[0]  # extract actual telegram_id
         user = get_user(telegram_id)
         if not user:
             continue
@@ -160,10 +161,8 @@ def distribute_daily_income_once():
                         (new_wallet, telegram_id)
                     )
                     conn.commit()
+            print(f"💸 {telegram_id}: +₹{daily_income} (Plan: {plan})")
     print("✅ Daily income distributed to all users.")
-
-def get_daily_income(plan: str) -> int:
-    return PLAN_BENEFITS.get(plan, {}).get("daily_income", 0)
 
 # Reply Keyboards
 start_menu = ReplyKeyboardMarkup(
