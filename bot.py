@@ -151,9 +151,9 @@ def distribute_daily_income_once():
     for telegram_id in users:
         print(f"➡️ Checking user: {telegram_id}")
 
-    if not is_user_activated(telegram_id):
-        print(f"⛔ Not activated: {telegram_id}")
-        continue
+        if not is_user_activated(telegram_id):
+            print(f"⛔ Not activated: {telegram_id}")
+            continue
 
     user = get_user(telegram_id)
     if not user:
