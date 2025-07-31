@@ -160,7 +160,7 @@ def distribute_daily_income_once():
             print(f"❌ User not found: {telegram_id}")
             continue
 
-        plan = user[9] or "Basic"
+        plan = user[10] or "Basic"
         wallet = user[5]
         daily_income = PLAN_BENEFITS.get(plan, {}).get("daily_income", 0)
 	
