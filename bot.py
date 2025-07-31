@@ -34,24 +34,6 @@ from db import is_user_banned
 
 from telegram import Bot
 
-PLAN_BENEFITS = {
-    "Basic": {
-        "daily_income": 100,
-        "weekly_bonus": 250,
-        "referral_bonus": 150
-    },
-    "Plus": {
-        "daily_income": 300,
-        "weekly_bonus": 600,
-        "referral_bonus": 450
-    },
-    "Elite": {
-        "daily_income": 700,
-        "weekly_bonus": 1200,
-        "referral_bonus": 950
-    }
-}
-
 RENDER_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 CASHFREE_APP_ID = os.getenv("CASHFREE_APP_ID")
 CASHFREE_SECRET_KEY = os.getenv("CASHFREE_SECRET_KEY")
@@ -107,18 +89,50 @@ def add_plus_referral_column():
 # Run this ONCE at startup
 add_plus_referral_column()
 
+from db import get_all_users, get_user, get_connection
+
+PLAN_BENEFITS = {
+    "Basic": {
+        "daily_income": 100,
+        "weekly_bonus": 250,
+        "referral_bonus": 150
+    },
+    "Plus": {
+        "daily_income": 300,
+        "weekly_bonus": 600,
+        "referral_bonus": 450
+    },
+    "Elite": {
+        "daily_income": 700,
+        "weekly_bonus": 1200,
+        "referral_bonus": 950
+    }
+}
+
+def distribute_daily_income_once():
+    users = get_all_users()  
+    for telegram_id in users:
+        user = get_user(telegram_id)
+        if not user:
+            continue
+
+        plan = user[9] or "Basic"  
+        wallet = user[5]           
+        daily_income = PLAN_BENEFITS.get(plan, {}).get("daily_income", 0)
+
+        if daily_income > 0:
+            new_wallet = wallet + daily_income
+            with get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE users SET wallet = %s WHERE telegram_id = %s",
+                        (new_wallet, telegram_id)
+                    )
+                    conn.commit()
+    print("✅ Daily income distributed to all users.")
+
 def get_daily_income(plan: str) -> int:
     return PLAN_BENEFITS.get(plan, {}).get("daily_income", 0)
-user = get_user(telegram_id)
-if user and user[1]:  # user[1] = telegram_id, assuming user[9] is plan
-    plan = user[9] or "Basic"  # fallback to Basic
-    daily_income = get_daily_income(plan)
-    # now update wallet:
-    new_balance = user[5] + daily_income  # user[5] = wallet
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("UPDATE users SET wallet = %s WHERE telegram_id = %s", (new_balance, telegram_id))
-            conn.commit()
 
 # Reply Keyboards
 start_menu = ReplyKeyboardMarkup(
