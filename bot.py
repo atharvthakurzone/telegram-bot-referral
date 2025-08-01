@@ -604,10 +604,18 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             conn = get_connection()
             cur = conn.cursor()
-            cur.execute(f"UPDATE users SET {field} = %s WHERE telegram_id = %s", (value, target_id))
+		
+            if field == "activation_status" and value.lower() in ["false", "0", "no"]:
+		# Deactivate user and clear plan
+                cur.execute("UPDATE users SET activation_status = FALSE, plan = NULL WHERE telegram_id = %s", (target_id,))
+            else:
+                # Normal field update
+                cur.execute(f"UPDATE users SET {field} = %s WHERE telegram_id = %s", (value, target_id))
+		    
             conn.commit()
             cur.close()
             conn.close()
+	    
             await update.message.reply_text(
                 f"✅ `{field}` updated successfully for user `{target_id}`.",
                 parse_mode="Markdown"
