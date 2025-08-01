@@ -44,6 +44,8 @@ ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 
 init_db()
 
+add_last_income_date_column()
+
 ASK_MOBILE = range(1000, 1001)
 manual_payment_requests = {}  # Stores user payment details for admin use
 
@@ -62,35 +64,44 @@ def escape_markdown(text: str) -> str:
 webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
 #requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}")
 
+def add_last_income_date_column():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS last_income_date DATE
+            """)
+            conn.commit()
+
 ASK_NAME, ASK_REFERRAL_CODE, ASK_NAME_WITH_REFERRAL, WAITING_FOR_SCREENSHOT = range(4)
 
 #Daily Income Scheduler
-#async def schedule_daily_income():
- #   while True:
-  #      now = datetime.datetime.now()
-   #     target = now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
-    #    wait_seconds = (target - now).total_seconds()
-#
- #       print(f"⏳ Waiting {int(wait_seconds)} seconds until next daily income...")
-  #      await asyncio.sleep(wait_seconds)
-#
- #       try:
-  #          distribute_daily_income_once()
-   #         print("✅ Daily income distributed.")
-    #    except Exception as e:
-     #       print(f"❌ Error distributing daily income: {e}")
-
-# TEST VERSION: runs every 60 seconds
 async def schedule_daily_income():
     while True:
-        print("⏳ Test: Distributing income in 60 seconds...")
-        await asyncio.sleep(60)  # Run every 1 minute
+        now = datetime.datetime.now()
+        target = now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
+        wait_seconds = (target - now).total_seconds()
+
+        print(f"⏳ Waiting {int(wait_seconds)} seconds until next daily income...")
+        await asyncio.sleep(wait_seconds)
 
         try:
             distribute_daily_income_once()
-            print("✅ Test: Daily income distributed.")
+            print("✅ Daily income distributed.")
         except Exception as e:
-            print(f"❌ Test: Error distributing daily income: {e}")
+            print(f"❌ Error distributing daily income: {e}")
+
+# TEST VERSION: runs every 60 seconds
+#async def schedule_daily_income():
+ #   while True:
+  #      print("⏳ Test: Distributing income in 60 seconds...")
+   #     await asyncio.sleep(60)  # Run every 1 minute
+#
+ #       try:
+  #          distribute_daily_income_once()
+   #         print("✅ Test: Daily income distributed.")
+    #    except Exception as e:
+     #       print(f"❌ Test: Error distributing daily income: {e}")
 		
 
 def log_action(action: str, actor_id: int, target_id=None, details=None):
@@ -142,6 +153,7 @@ PLAN_BENEFITS = {
 
 def distribute_daily_income_once():
     users = get_all_users()  
+    today = datetime.date.today()
 	
     # 🔍 Debug: Check what get_all_users() returns
     print("🔍 Sample users from get_all_users():")
@@ -162,6 +174,13 @@ def distribute_daily_income_once():
 
         plan = user[12] or "Basic"
         wallet = user[5]
+        last_income_date = user[13]
+
+        # ⏭️ Skip if already paid today
+        if last_income_date == today:
+            print(f"⏭️ Already paid today: {telegram_id}")
+            continue
+	    
         daily_income = PLAN_BENEFITS.get(plan, {}).get("daily_income", 0)
 	
         print(f"📊 User: {telegram_id}, Plan: {plan}, Wallet: ₹{wallet}, Income: ₹{daily_income}")
@@ -171,8 +190,8 @@ def distribute_daily_income_once():
             with get_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute(
-                        "UPDATE users SET wallet = %s WHERE telegram_id = %s",
-                        (new_wallet, telegram_id)
+                        "UPDATE users SET wallet = %s, last_income_date = %s WHERE telegram_id = %s",
+                        (new_wallet, today, telegram_id)
                     )
                     conn.commit()
             print(f"💸 {telegram_id}: +₹{daily_income} (Plan: {plan})")
