@@ -198,6 +198,18 @@ def distribute_daily_income_once():
 
     print("✅ Daily income distributed to all users.")
 
+#Instant Payout Distributor
+async def distribute_now(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        await update.message.reply_text("❌ You are not authorized to perform this action.")
+        return
+
+    try:
+        distribute_daily_income_once()
+        await update.message.reply_text("✅ Daily income distribution triggered manually.")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error distributing income: {e}")
+
 # Reply Keyboards
 start_menu = ReplyKeyboardMarkup(
     [[KeyboardButton("📝 Register")], [KeyboardButton("🔗 Register by Referrer")]],
@@ -996,6 +1008,7 @@ app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("activate", activate))
 app.add_handler(CommandHandler("approve", approve))
 app.add_handler(CommandHandler("id", my_id))
+app.add_handler(CommandHandler("distribute_now", distribute_now))
 
     # 2. Callback handlers
 app.add_handler(CallbackQueryHandler(handle_callback_query))
