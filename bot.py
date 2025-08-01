@@ -44,6 +44,15 @@ ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 
 init_db()
 
+def add_last_income_date_column():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS last_income_date DATE
+            """)
+            conn.commit()
+
 add_last_income_date_column()
 
 ASK_MOBILE = range(1000, 1001)
@@ -63,15 +72,6 @@ def escape_markdown(text: str) -> str:
 
 webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
 #requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}")
-
-def add_last_income_date_column():
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS last_income_date DATE
-            """)
-            conn.commit()
 
 ASK_NAME, ASK_REFERRAL_CODE, ASK_NAME_WITH_REFERRAL, WAITING_FOR_SCREENSHOT = range(4)
 
