@@ -397,7 +397,7 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["awaiting_activation"] = True
 
     await update.message.reply_text(
-        "🙏 Kindly activate your account to start receiving earning benefits."
+        "Kindly activate your account to start receiving earning benefits."
     )
 
     if payment_url:
