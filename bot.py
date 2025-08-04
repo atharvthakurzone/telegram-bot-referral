@@ -239,7 +239,7 @@ CHANNEL_ID = "@zyncpayupdates"  # your channel username
 
 async def channel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    if user_id != ADMIN_ID:
+    if user_id != ADMIN_CHAT_ID:
         await update.message.reply_text("❌ You are not authorized to use this command.")
         return
 
@@ -260,7 +260,7 @@ async def channel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 #Adds media support
 async def forward_to_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    if user_id != ADMIN_ID or not update.message:
+    if user_id != ADMIN_CHAT_ID or not update.message:
         return
 
     try:
@@ -1058,7 +1058,7 @@ app.add_handler(conv_handler)
     # 4. Messages
 app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
-app.add_handler(MessageHandler(filters.ALL & filters.User(ADMIN_ID), forward_to_channel))
+app.add_handler(MessageHandler(filters.ALL & filters.User(ADMIN_CHAT_ID), forward_to_channel))
 #app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
 
 async def log_all_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
