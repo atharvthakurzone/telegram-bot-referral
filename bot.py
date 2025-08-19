@@ -200,6 +200,33 @@ def distribute_daily_income_once():
 
     print("✅ Daily income distributed to all users.")
 
+
+def get_user_plan(telegram_id):
+    """
+    Fetch the user's plan details from the database.
+    Returns a dict: {"name": plan_name, "amount": plan_amount}
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE telegram_id = %s", (telegram_id,))
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if not user:
+        return {"name": "None", "amount": 0}
+
+    plan_name = user[12]  # index 12 stores plan
+    # Set plan amount based on name
+    plan_map = {
+        "Basic": 1499,
+        "Plus": 4499,
+        "Elite": 9500
+    }
+    plan_amount = plan_map.get(plan_name, 0)
+
+    return {"name": plan_name, "amount": plan_amount}
+
 #Instant Payout Distributor
 async def distribute_now(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_CHAT_ID:
