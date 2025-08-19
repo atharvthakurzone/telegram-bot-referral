@@ -801,7 +801,26 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if is_user_activated(update.effective_user.id):
             # Active user flow
             user_plan = get_user_plan(update.effective_user.id)  # function to fetch user's plan
-            text = f"My Plan:\nPlan Name: {user_plan['name']}\nAmount: ₹{user_plan['amount']}"
+			
+            # Map plan name to emoji
+			plan_emojis = {
+				"Basic": "✅",
+                "Plus": "💎",
+                "Elite": "👑"
+            }
+            plan_name = user_plan.get('name') or user_plan.get('plan_name') or "Unknown"
+        plan_amount = user_plan.get('amount') or user_plan.get('plan_amount') or 0
+        emoji = plan_emojis.get(plan_name, "")
+        
+        text_msg = (
+            f"My Plan:\n"
+            f"{emoji} {plan_name} - ₹{plan_amount}\n\n"
+            f"Duration - Not Defined for any plan\n"
+            f"Daily Income - According to plan\n"
+            f"Weekly Bonus - According to plan\n"
+            f"Referral Bonus - According to plan"
+        )
+		
             keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("See Other Plans", callback_data="see_other_plans")]])
             await update.message.reply_text(text, reply_markup=keyboard)
         else:
