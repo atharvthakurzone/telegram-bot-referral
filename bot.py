@@ -295,7 +295,7 @@ async def wallet_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(
 			"💸 *Withdraw feature is locked!*\n\n"
             "To unlock this feature, refer the app to at least 1 user. Also make sure the new user who joined using your referral code should activate their account with any plan.\n\n"
-			"✅ Active Referred User - 0/1"
+			"✅ Active Referred User - 0/1",
             parse_mode="Markdown"
 		)
 
