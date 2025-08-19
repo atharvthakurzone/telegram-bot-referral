@@ -409,7 +409,7 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]
         ])
 
-	    await update.message.reply_text(text_msg, reply_markup=keyboard)
+        await update.message.reply_text(text_msg, reply_markup=keyboard)
     else:
         await update.message.reply_text("❗ You are not registered. Use /start", reply_markup=start_menu)
 
