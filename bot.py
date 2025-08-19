@@ -397,9 +397,10 @@ async def cancel_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
     if user:
-        await update.message.reply_text(
-            f"👤 Username: {user[2]}\n💰 Wallet: ₹{user[5]}\n🔗 Your referral code: {user[3]}",
-            reply_markup=back_menu
+        text_msg = (
+            f"👤 Username: {user[2]}\n"
+            f"💰 Wallet: ₹{user[5]}\n"
+            f"🔗 Your referral code: {user[3]}"
         )
 
         keyboard = InlineKeyboardMarkup([
