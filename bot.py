@@ -13,6 +13,8 @@ from telegram.ext import ApplicationBuilder
 
 from telegram.constants import ChatAction
 
+from telegram import Update
+
 from telegram.ext import MessageHandler, filters, CallbackContext
 
 from db import get_connection
@@ -282,7 +284,18 @@ async def channel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("✅ Message sent to the channel.")
     except Exception as e:
         await update.message.reply_text(f"❌ Failed to send message: {e}")
-	    
+
+
+#Withdrawl Handler
+async def wallet_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()  # Acknowledge the callback to remove the loading animation
+
+    if query.data == "wallet_withdraw":
+        await query.message.reply_text("💸 Withdraw feature coming soon!")
+
+    elif query.data == "wallet_history":
+        await query.message.reply_text("📄 You have not made any Withdrawal Request.")
 
 #Adds media support
 async def forward_to_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1200,6 +1213,7 @@ app.add_handler(CommandHandler("channel", channel_command))
 
     # 2. Callback handlers
 app.add_handler(CallbackQueryHandler(handle_callback_query))
+app.add_handler(CallbackQueryHandler(wallet_callback, pattern="^wallet_"))
 
     # 3. Conversations
 app.add_handler(conv_handler)
