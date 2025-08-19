@@ -1212,8 +1212,8 @@ app.add_handler(CommandHandler("distribute_now", distribute_now))
 app.add_handler(CommandHandler("channel", channel_command))
 
     # 2. Callback handlers
-app.add_handler(CallbackQueryHandler(handle_callback_query))
 app.add_handler(CallbackQueryHandler(wallet_callback, pattern="^wallet_"))
+app.add_handler(CallbackQueryHandler(handle_callback_query))
 
     # 3. Conversations
 app.add_handler(conv_handler)
