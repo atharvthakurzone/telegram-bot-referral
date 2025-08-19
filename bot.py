@@ -1086,6 +1086,38 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             "Elite": {"emoji": "👑", "amount": 9500, "daily": "₹750/-", "weekly": "₹1200/- (Every 4th week)", "referral": "According to the plan of the newly joined user (15% of the plan)"}
         }
 
+        # Only proceed if the user is inactive
+        if not is_user_activated(telegram_id):
+            plan_map = {
+                "Basic": 1499,
+                "Plus": 4499,
+                "Elite": 9500
+            }
+            plan_amount = plan_map.get(plan_name, 0)
+            if plan_amount == 0:
+                await query.answer("⚠️ Plan not found.", show_alert=True)
+                return
+
+        manual_payment_requests[telegram_id] = {
+            "name": plan_name,
+            "amount": plan_amount
+        }
+        context.user_data["awaiting_mobile_number"] = True
+
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🔙 Back to Plans", callback_data="see_other_plans")]
+        ])
+
+        await query.edit_message_text(
+            f"📱 Please enter your mobile number to receive the payment link for the *{plan_name}* plan (₹{plan_amount}).",
+            parse_mode="Markdown",
+            reply_markup=keyboard
+        )
+        return
+
+    # Otherwise, for active users, show plan details (optional)
+
+		
         details = plan_details.get(plan_name)
         if not details:
             await query.answer("⚠️ Plan not found.", show_alert=True)
