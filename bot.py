@@ -1016,9 +1016,9 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         current_plan = get_user_plan(telegram_id)['name']
 
         plan_map = {
-            "✅ Basic": ("Basic", 1499),
-            "💎 Plus": ("Plus", 4499),
-            "👑 Elite": ("Elite", 9500)
+            "✅ Basic": ("✅ Basic", 1499),
+            "💎 Plus": ("💎 Plus", 4499),
+            "👑 Elite": ("👑 Elite", 9500)
         }
     
         # Only show plans other than current
