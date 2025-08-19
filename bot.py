@@ -852,9 +852,9 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             # Inactive user flow
             keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("✅ Basic", callback_data="plan_basic")],
-                [InlineKeyboardButton("💎 Plus", callback_data="plan_plus")],
-                [InlineKeyboardButton("👑 Elite", callback_data="plan_elite")]
+                [InlineKeyboardButton("✅ Basic", callback_data="show_plan_basic")],
+                [InlineKeyboardButton("💎 Plus", callback_data="show_plan_plus")],
+                [InlineKeyboardButton("👑 Elite", callback_data="show_plan_elite")]
             ])
             await update.message.reply_text("Choose a plan to see details:", reply_markup=keyboard)
 
