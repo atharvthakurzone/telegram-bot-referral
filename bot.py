@@ -1087,7 +1087,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         plan_details = {
             "Basic": {"emoji": "✅", "amount": 1499, "daily": "₹100/-", "weekly": "₹250/- (Every 4th week)", "referral": "According to the plan of the newly joined user (10% of the plan)"},
             "Plus": {"emoji": "💎", "amount": 4499, "daily": "₹300/-", "weekly": "₹600/- (Every 4th week)", "referral": "According to the plan of the newly joined user (12% of the plan)"},
-            "Elite": {"emoji": "👑", "amount": 9500, "daily": "₹750/-", "weekly": "₹1200/- (Every 4th week)", "referral": "According to the plan of the newly joined user (15% of the plan)}
+            "Elite": {"emoji": "👑", "amount": 9500, "daily": "₹750/-", "weekly": "₹1200/- (Every 4th week)", "referral": "According to the plan of the newly joined user (15% of the plan)"}
         }
 
         details = plan_details.get(plan_name)
