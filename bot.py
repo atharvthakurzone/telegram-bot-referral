@@ -771,7 +771,20 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await referrals(update, context)
 
     elif text == "📄 Plans":
-        await update.message.reply_text("Dear User our upcoming plans would be updating here soon!", reply_markup=back_menu)
+        if is_user_activated(update.effective_user.id):
+        # Active user flow
+        user_plan = get_user_plan(update.effective_user.id)  # function to fetch user's plan
+        text = f"My Plan:\nPlan Name: {user_plan['name']}\nAmount: ₹{user_plan['amount']}"
+        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("See Other Plans", callback_data="see_other_plans")]])
+        await update.message.reply_text(text, reply_markup=keyboard)
+    else:
+        # Inactive user flow
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("Basic", callback_data="plan_basic")],
+            [InlineKeyboardButton("Plus", callback_data="plan_plus")],
+            [InlineKeyboardButton("Elite", callback_data="plan_elite")]
+        ])
+        await update.message.reply_text("Choose a plan to see details:", reply_markup=keyboard)
 
     elif text == "📝 Register":
         return await handle_register(update, context)
