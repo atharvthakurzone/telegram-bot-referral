@@ -401,6 +401,15 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"👤 Username: {user[2]}\n💰 Wallet: ₹{user[5]}\n🔗 Your referral code: {user[3]}",
             reply_markup=back_menu
         )
+
+        keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("💸 Withdraw", callback_data="wallet_withdraw"),
+                InlineKeyboardButton("📄 My Withdrawals", callback_data="wallet_history")
+            ]
+        ])
+
+	    await update.message.reply_text(text_msg, reply_markup=keyboard)
     else:
         await update.message.reply_text("❗ You are not registered. Use /start", reply_markup=start_menu)
 
