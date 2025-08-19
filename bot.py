@@ -220,7 +220,7 @@ start_menu = ReplyKeyboardMarkup(
 
 main_menu = ReplyKeyboardMarkup([
     [KeyboardButton("🏠 Home"), KeyboardButton("👤 Profile"), KeyboardButton("💰 Wallet")],
-    [KeyboardButton("🏦 Withdraw"), KeyboardButton("👥 Referrals")]
+    [KeyboardButton("📄 Plans"), KeyboardButton("👥 Referrals")]
 ], resize_keyboard=True)
 
 back_menu = ReplyKeyboardMarkup([
