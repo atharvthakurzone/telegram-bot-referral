@@ -780,9 +780,9 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             # Inactive user flow
             keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("Basic", callback_data="plan_basic")],
-                [InlineKeyboardButton("Plus", callback_data="plan_plus")],
-                [InlineKeyboardButton("Elite", callback_data="plan_elite")]
+                [InlineKeyboardButton("✅ Basic", callback_data="plan_basic")],
+                [InlineKeyboardButton("💎 Plus", callback_data="plan_plus")],
+                [InlineKeyboardButton("👑 Elite", callback_data="plan_elite")]
             ])
             await update.message.reply_text("Choose a plan to see details:", reply_markup=keyboard)
 
@@ -989,9 +989,9 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         current_plan = get_user_plan(telegram_id)['name']
 
         plan_map = {
-            "Basic": ("Basic", 1499),
-            "Plus": ("Plus", 4499),
-            "Elite": ("Elite", 9500)
+            "✅ Basic": ("Basic", 1499),
+            "💎 Plus": ("Plus", 4499),
+            "👑 Elite": ("Elite", 9500)
         }
     
         # Only show plans other than current
