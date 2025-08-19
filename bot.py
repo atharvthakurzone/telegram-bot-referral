@@ -770,8 +770,8 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "👥 Referrals":
         await referrals(update, context)
 
-    elif text == "🏦 Withdraw":
-        await update.message.reply_text("🔒 Withdraw feature coming soon!", reply_markup=back_menu)
+    elif text == "📄 Plans":
+        await update.message.reply_text("Dear User our upcoming plans would be updating here soon!", reply_markup=back_menu)
 
     elif text == "📝 Register":
         return await handle_register(update, context)
