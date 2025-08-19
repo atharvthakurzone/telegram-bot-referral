@@ -1061,17 +1061,17 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         telegram_id = query.from_user.id
         current_plan = get_user_plan(telegram_id)['name']
 
-        plan_map = {
-            "Basic": ("✅ Basic", 1499),
-            "Plus": ("💎 Plus", 4499),
-            "Elite": ("👑 Elite", 9500)
+        plan_details = {
+        "Basic": {"emoji": "✅", "amount": 1499, "daily": "₹100/-", "weekly": "₹250/- (Every 4th week)", "referral": "10%"},
+        "Plus": {"emoji": "💎", "amount": 4499, "daily": "₹300/-", "weekly": "₹600/- (Every 4th week)", "referral": "12%"},
+        "Elite": {"emoji": "👑", "amount": 9500, "daily": "₹750/-", "weekly": "₹1200/- (Every 4th week)", "referral": "15%"}
         }
     
         # Only show plans other than current
         keyboard_buttons = []
-        for key, value in plan_map.items():
-            if key != current_plan:
-                keyboard_buttons.append([InlineKeyboardButton(key, callback_data=f"plan_{key.lower()}")])
+        for plan_name, details in plan_details.items():
+            if plan_name != current_plan:
+                keyboard_buttons.append([InlineKeyboardButton(f"{details['emoji']} {plan_name} - ₹{details['amount']}", callback_data=f"show_plan_{plan_name.lower()}")])
 
         keyboard = InlineKeyboardMarkup(keyboard_buttons)
         await query.edit_message_text("Choose another plan to see details:", reply_markup=keyboard)
