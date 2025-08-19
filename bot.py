@@ -1062,9 +1062,9 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         current_plan = get_user_plan(telegram_id)['name']
 
         plan_details = {
-        "Basic": {"emoji": "✅", "amount": 1499, "daily": "₹100/-", "weekly": "₹250/- (Every 4th week)", "referral": "10%"},
-        "Plus": {"emoji": "💎", "amount": 4499, "daily": "₹300/-", "weekly": "₹600/- (Every 4th week)", "referral": "12%"},
-        "Elite": {"emoji": "👑", "amount": 9500, "daily": "₹750/-", "weekly": "₹1200/- (Every 4th week)", "referral": "15%"}
+        "Basic": {"emoji": "✅", "amount": 1499, "daily": "₹100/-", "weekly": "₹250/- (Every 4th week)", "referral": "According to the plan of the newly joined user (10% of the plan)"},
+        "Plus": {"emoji": "💎", "amount": 4499, "daily": "₹300/-", "weekly": "₹600/- (Every 4th week)", "referral": "According to the plan of the newly joined user (12% of the plan)"},
+        "Elite": {"emoji": "👑", "amount": 9500, "daily": "₹750/-", "weekly": "₹1200/- (Every 4th week)", "referral": "According to the plan of the newly joined user (15% of the plan)"}
         }
     
         # Only show plans other than current
@@ -1081,9 +1081,9 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         telegram_id = query.from_user.id
 
         plan_details = {
-            "Basic": {"emoji": "✅", "amount": 1499, "daily": "₹100/-", "weekly": "₹250/- (Every 4th week)", "referral": "10%"},
-            "Plus": {"emoji": "💎", "amount": 4499, "daily": "₹300/-", "weekly": "₹600/- (Every 4th week)", "referral": "12%"},
-            "Elite": {"emoji": "👑", "amount": 9500, "daily": "₹750/-", "weekly": "₹1200/- (Every 4th week)", "referral": "15%"}
+            "Basic": {"emoji": "✅", "amount": 1499, "daily": "₹100/-", "weekly": "₹250/- (Every 4th week)", "referral": "According to the plan of the newly joined user (10% of the plan)"},
+            "Plus": {"emoji": "💎", "amount": 4499, "daily": "₹300/-", "weekly": "₹600/- (Every 4th week)", "referral": "According to the plan of the newly joined user (12% of the plan)"},
+            "Elite": {"emoji": "👑", "amount": 9500, "daily": "₹750/-", "weekly": "₹1200/- (Every 4th week)", "referral": "According to the plan of the newly joined user (15% of the plan)"}
         }
 
         details = plan_details.get(plan_name)
