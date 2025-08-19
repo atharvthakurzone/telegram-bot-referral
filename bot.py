@@ -1076,6 +1076,36 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         keyboard = InlineKeyboardMarkup(keyboard_buttons)
         await query.edit_message_text("Choose another plan to see details:", reply_markup=keyboard)
 
+    elif data.startswith("show_plan_"):
+    plan_name = data.replace("show_plan_", "").capitalize()
+    telegram_id = query.from_user.id
+
+    plan_details = {
+        "Basic": {"emoji": "✅", "amount": 1499, "daily": "₹100/-", "weekly": "₹250/- (Every 4th week)", "referral": "10%"},
+        "Plus": {"emoji": "💎", "amount": 4499, "daily": "₹300/-", "weekly": "₹600/- (Every 4th week)", "referral": "12%"},
+        "Elite": {"emoji": "👑", "amount": 9500, "daily": "₹750/-", "weekly": "₹1200/- (Every 4th week)", "referral": "15%"}
+    }
+
+    details = plan_details.get(plan_name)
+    if not details:
+        await query.answer("⚠️ Plan not found.", show_alert=True)
+        return
+
+    text_msg = (
+        f"{details['emoji']} *{plan_name} Plan*\n\n"
+        f"💰 Price: ₹{details['amount']}\n"
+        f"📅 Daily Income: {details['daily']}\n"
+        f"📅 Weekly Bonus: {details['weekly']}\n"
+        f"👥 Referral Bonus: {details['referral']}"
+    )
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔙 Back to Plans", callback_data="see_other_plans")],
+        [InlineKeyboardButton("✅ Select This Plan", callback_data=f"plan_{plan_name.lower()}")]
+    ])
+
+    await query.edit_message_text(text_msg, reply_markup=keyboard, parse_mode="Markdown")
+
 
 #Pending account activation	
 async def show_pending_activations(update: Update, context: ContextTypes.DEFAULT_TYPE):
