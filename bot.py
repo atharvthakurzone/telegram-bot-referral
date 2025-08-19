@@ -984,6 +984,25 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             await query.edit_message_reply_markup(reply_markup=None)
             await query.message.reply_text("❌ User not found.")
 
+    elif data == "see_other_plans":
+    telegram_id = query.from_user.id
+    current_plan = get_user_plan(telegram_id)['name']
+
+    plan_map = {
+        "Basic": ("Basic", 1499),
+        "Plus": ("Plus", 4499),
+        "Elite": ("Elite", 9500)
+    }
+
+    # Only show plans other than current
+    keyboard_buttons = []
+    for key, value in plan_map.items():
+        if key != current_plan:
+            keyboard_buttons.append([InlineKeyboardButton(key, callback_data=f"plan_{key.lower()}")])
+
+    keyboard = InlineKeyboardMarkup(keyboard_buttons)
+    await query.edit_message_text("Choose another plan to see details:", reply_markup=keyboard)
+
 
 #Pending account activation	
 async def show_pending_activations(update: Update, context: ContextTypes.DEFAULT_TYPE):
