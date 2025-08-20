@@ -106,8 +106,36 @@ async def schedule_daily_income():
    #         print("✅ Test: Daily income distributed.")
     #    except Exception as e:
      #       print(f"❌ Test: Error distributing daily income: {e}")
-		
 
+#active referred users
+def get_active_referred_users(referrer_uid):
+    """
+    Get activated users who were referred by this UID and their plans
+    Returns: List of tuples (telegram_id, username, plan)
+    """
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        
+        # Get activated users referred by this UID
+        cur.execute("""
+            SELECT telegram_id, username, plan 
+            FROM users 
+            WHERE referred_by = %s AND activation_status = TRUE
+        """, (referrer_uid,))
+        
+        active_users = cur.fetchall()
+        return active_users
+        
+    except Exception as e:
+        print(f"Error getting active referred users: {e}")
+        return []
+    finally:
+        cur.close()
+        conn.close()
+
+
+#log keeper
 def log_action(action: str, actor_id: int, target_id=None, details=None):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_msg = f"[{timestamp}] 👤 {actor_id} → {action}"
@@ -411,7 +439,7 @@ async def cancel_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ Referral process cancelled.", reply_markup=start_menu)
     return ConversationHandler.END
 
-# Wallet
+# Wallet 
 async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         user = get_user(update.effective_user.id)
@@ -421,56 +449,39 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         telegram_id = update.effective_user.id
         wallet_balance = user[5]  # wallet balance
-        username = user[2] or "User"
-        referral_code = user[3] or "N/A"
+        user_uid = user[8]  # user's UID
         
         # Get user's current plan
         user_plan_info = get_user_plan(telegram_id)
         user_plan_name = user_plan_info.get('name', 'Basic')
         
-        # Get ALL referred users (for count display)
-        all_referred_users = get_referred_users(referral_code)
-        total_referrals_count = len(all_referred_users) if all_referred_users else 0
-        
-        # Get only ACTIVE referred users (for earnings calculation)
-        active_referred_users = get_active_referred_users(referral_code)
+        # Get ACTIVE referred users for earnings calculation
+        active_referred_users = get_active_referred_users(user_uid)
         active_referrals_count = len(active_referred_users) if active_referred_users else 0
 
-        # Calculate accurate referral earnings based on each referred user's plan
+        # Calculate referral earnings
         referral_earnings = 0
         referral_percent = {"Basic": 0.10, "Plus": 0.12, "Elite": 0.15}.get(user_plan_name, 0.10)
         
         plan_amounts = {"Basic": 1499, "Plus": 4499, "Elite": 9500}
         
         for referred_user in active_referred_users:
-            referred_plan = referred_user['plan'] or 'Basic'
+            referred_plan = referred_user[2] or 'Basic'  # plan is at index 2
             referred_plan_amount = plan_amounts.get(referred_plan, 1499)
             referral_earnings += referred_plan_amount * referral_percent
 
-        # Calculate weekly bonus progress
-        registered_date = user[10]  # Assuming index 10 is registration date
-        if registered_date and isinstance(registered_date, datetime.date):
-            days_registered = (datetime.date.today() - registered_date).days
-            weekly_progress = days_registered % 28  # 4 weeks = 28 days
-            weekly_bonus_progress = f"{weekly_progress} / 28"
-        else:
-            weekly_bonus_progress = "0 / 28"
+        # Weekly bonus progress (placeholder - you can implement properly later)
+        weekly_bonus_progress = "0 / 28"
 
-        # Check if user has any withdrawals
-        last_withdrawal = "None"  # You'll need to implement this if you track withdrawals
-
+        # Only show these 4 items as requested
         text_msg = (
-            f"👤 Username: {username}\n"
             f"💰 Wallet Balance: ₹{wallet_balance}\n"
             f"📈 Referral Earnings: ₹{int(referral_earnings)}\n"
-            f"📝 Last Withdrawal: {last_withdrawal}\n"
-            f"🎁 Weekly Bonus Progress: {weekly_bonus_progress}\n"
-            f"👥 Total Referrals: {total_referrals_count} users\n"
-            f"✅ Active Referrals: {active_referrals_count} users\n"
-            f"🔗 Your Referral Code: `{referral_code}`"
+            f"📝 Last Withdrawal: None\n"
+            f"🎁 Weekly Bonus Progress: {weekly_bonus_progress}"
         )
 
-        # Update the withdrawal button message based on active referrals
+        # Update the withdrawal button based on active referrals
         if active_referrals_count >= 1:
             withdraw_text = "💸 Withdraw"
         else:
@@ -479,21 +490,34 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard = InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(withdraw_text, callback_data="wallet_withdraw"),
-                InlineKeyboardButton("📄 My Withdrawals", callback_data="wallet_history")
+                InlineKeyboardButton("📄 History", callback_data="wallet_history")
             ]
         ])
 
-        await update.message.reply_text(text_msg, reply_markup=keyboard, parse_mode="Markdown")
+        await update.message.reply_text(text_msg, reply_markup=keyboard)
         
     except Exception as e:
         print(f"Error in wallet function: {e}")
-        import traceback
-        traceback.print_exc()
-        await update.message.reply_text(
-            "❌ Error accessing wallet information. Please try again later.",
-            reply_markup=main_menu
-        )
-
+        # Fallback to simple version if complex calculation fails
+        try:
+            user = get_user(update.effective_user.id)
+            if user:
+                simple_msg = (
+                    f"💰 Wallet Balance: ₹{user[5]}\n"
+                    f"📈 Referral Earnings: ₹0\n"
+                    f"📝 Last Withdrawal: None\n"
+                    f"🎁 Weekly Bonus Progress: 0 / 28"
+                )
+                keyboard = InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔒 Withdraw (0/1)", callback_data="wallet_withdraw")]
+                ])
+                await update.message.reply_text(simple_msg, reply_markup=keyboard)
+        except:
+            await update.message.reply_text(
+                "❌ Error accessing wallet information.",
+                reply_markup=main_menu
+            )
+			
 
 # Referrals
 async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE):
