@@ -644,6 +644,8 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     from datetime import datetime, date
 
     data = get_user_profile(update.effective_user.id)
+	print("📌 DEBUG user profile:", data, type(data))
+
     if not data:
         await update.message.reply_text("❗ You are not registered. Use /start", reply_markup=start_menu)
         return
