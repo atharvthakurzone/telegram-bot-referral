@@ -525,7 +525,7 @@ async def cancel_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Wallet 
 async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
-        from datetime import datetime
+        from datetime import datetime, date
 
         user = get_user(update.effective_user.id)
         if not user:
@@ -607,7 +607,7 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"💰 Wallet Balance: ₹{user[5]}\n"
                     f"📈 Referral Earnings: ₹0\n"
                     f"📝 Last Withdrawal: None\n"
-                    f"🎁 Weekly Bonus Progress: 0 / 28"
+                    f"🎁 Weekly Bonus Progress: -0 / 28"
                 )
                 keyboard = InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔒 Withdraw (0/1)", callback_data="wallet_withdraw")]
