@@ -658,19 +658,25 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # ✅ Calculate Earnings Days from plan_activation_date
     plan_activation_date = data.get('plan_activation_date') 
+	print("📌 DEBUG plan_activation_date raw:", plan_activation_date, type(plan_activation_date))
+
     earnings_days = "0"
     
     if plan_activation_date:
         try:
             if isinstance(plan_activation_date, date):
                 activation_date = plan_activation_date
+            elif isinstance(plan_activation_date, date):
+				activation_date = plan_activation_date
             else:
                 activation_date = datetime.strptime(str(plan_activation_date), "%Y-%m-%d").date()
+
+			print("📌 DEBUG activation_date parsed:", activation_date, type(activation_date))
 
             days_active = (datetime.now().date() - activation_date).days
             earnings_days = str(days_active)
         except Exception as e:
-            print(f"Error calculating earnings days: {e}")
+			print("❌ DEBUG Error calculating earnings days:", e)
             earnings_days = "N/A"
 
     # Build message
