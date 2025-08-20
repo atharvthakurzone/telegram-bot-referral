@@ -556,7 +556,7 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
             referral_earnings += referred_plan_amount * referral_percent
 
         # Weekly bonus progress based on plan_activation_date
-        plan_activation_date = user[14]  # replace with actual index in your `user` tuple
+        plan_activation_date = user[14] 
         weekly_bonus_progress = "0 / 28"
 
         if plan_activation_date:
@@ -641,24 +641,50 @@ async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Profile
 async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    from datetime import datetime, date
+
     data = get_user_profile(update.effective_user.id)
     if not data:
         await update.message.reply_text("❗ You are not registered. Use /start", reply_markup=start_menu)
         return
+
+    # Handle Referred By
     ref_by = "N/A"
     if isinstance(data['referred_by'], dict):
         ref_by = f"[{data['referred_by']['username']}](tg://user?id={data['referred_by']['telegram_id']}) (UID: {data['referred_by']['uid']})"
+
+    # Activation status
     status = "✅ Activated" if data['activation_status'] else "❌ Not Activated"
+
+    # ✅ Calculate Earnings Days from plan_activation_date
+    earnings_days = "0"
+    plan_activation_date = data.get("plan_activation_date")
+    if plan_activation_date:
+        try:
+            if isinstance(plan_activation_date, date):
+                activation_date = plan_activation_date
+            else:
+                activation_date = datetime.strptime(str(plan_activation_date), "%Y-%m-%d").date()
+
+            days_active = (datetime.now().date() - activation_date).days
+            earnings_days = str(days_active)
+        except Exception as e:
+            print(f"Error calculating earnings days: {e}")
+            earnings_days = "0"
+
+    # Build message
     msg = (
         f"🆔 User ID: {data['user_uid']}\n"
         f"👤 Username: {data['username']}\n"
         f"🔗 Referral Code: {data['user_uid']}\n"
         f"🔓 Status: {status}\n"
         f"📅 Days Since Registration: {data['registered_days']}\n"
-        f"💸 Earnings Days Completed: {data['earnings_days']} / 20\n"
+        f"💸 Earnings Days Completed: {earnings_days}\n"
         f"👤 Referred By: {ref_by}"
     )
+
     await update.message.reply_text(msg, reply_markup=back_menu, parse_mode="Markdown")
+
 
 # Activate
 async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
