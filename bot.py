@@ -107,6 +107,82 @@ async def schedule_daily_income():
     #    except Exception as e:
      #       print(f"❌ Test: Error distributing daily income: {e}")
 
+
+#due weekly bonus       
+def is_weekly_bonus_due(telegram_id):
+    """Check if weekly bonus is due for payment"""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT plan_activation_date, last_income_date 
+            FROM users 
+            WHERE telegram_id = %s
+        """, (telegram_id,))
+        
+        result = cur.fetchone()
+        if not result or not result[0]:  # No activation date
+            return False
+            
+        activation_date, last_income_date = result
+        today = datetime.date.today()
+        
+        # Calculate days since activation
+        days_since_activation = (today - activation_date).days
+        
+        # Bonus is due every 28 days (4 weeks)
+        # And if we haven't paid it in the current cycle
+        if days_since_activation % 28 == 0:
+            if not last_income_date or last_income_date < today:
+                return True
+                
+        return False
+        
+    except Exception as e:
+        print(f"Error checking weekly bonus: {e}")
+        return False
+    finally:
+        cur.close()
+        conn.close()
+
+#weekly bonus orogress
+def get_weekly_bonus_progress(telegram_id):
+    """Calculate weekly bonus progress based on activation date"""
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT plan_activation_date 
+            FROM users 
+            WHERE telegram_id = %s AND plan_activation_date IS NOT NULL
+        """, (telegram_id,))
+        
+        result = cur.fetchone()
+        if not result:
+            return "0 / 28"  # Not activated yet
+            
+        activation_date = result[0]
+        today = datetime.date.today()
+        
+        # Calculate days since activation
+        days_since_activation = (today - activation_date).days
+        
+        if days_since_activation < 0:
+            return "0 / 28"  # Invalid date
+            
+        # Calculate progress in current 28-day cycle (4 weeks)
+        days_in_current_cycle = days_since_activation % 28
+        weeks_completed = days_since_activation // 28
+        
+        return f"{days_in_current_cycle} / 28"
+        
+    except Exception as e:
+        print(f"Error calculating weekly progress: {e}")
+        return "0 / 28"
+    finally:
+        cur.close()
+        conn.close()
+
 #active referred users
 def get_active_referred_users(referrer_uid):
     """
@@ -159,9 +235,23 @@ def add_plus_referral_column():
                 ADD COLUMN IF NOT EXISTS plus_referral_count INTEGER DEFAULT 0
             """)
             conn.commit()
+			
 
 # Run this ONCE at startup
 add_plus_referral_column()
+
+def add_activation_date_column():
+    """Add column to track when the user's plan was activated"""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                ALTER TABLE users 
+                ADD COLUMN IF NOT EXISTS plan_activation_date DATE
+            """)
+            conn.commit()
+
+# Run this at startup
+add_activation_date_column()
 
 from db import get_all_users, get_user, get_connection
 
@@ -470,10 +560,10 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
             referred_plan_amount = plan_amounts.get(referred_plan, 1499)
             referral_earnings += referred_plan_amount * referral_percent
 
-        # Weekly bonus progress (placeholder - you can implement properly later)
-        weekly_bonus_progress = "0 / 28"
+        # Get ACCURATE weekly bonus progress
+        weekly_bonus_progress = get_weekly_bonus_progress(telegram_id)
 
-        # Only show these 4 items as requested
+        # Display
         text_msg = (
             f"💰 Wallet Balance: ₹{wallet_balance}\n"
             f"📈 Referral Earnings: ₹{int(referral_earnings)}\n"
@@ -1147,20 +1237,25 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         target_id = int(data.split("_")[1])
         context.user_data["awaiting_payment_link_for"] = target_id
         await query.message.reply_text("✉️ Please send the payment link to forward to the user.")
+		
 
-    elif data.startswith("approve_basic:") or data.startswith("approve_plus:") or data.startswith("approve_elite:"):
-        plan = data.split(":")[0].replace("approve_", "").capitalize()
-        uid = data.split(":")[1]
-        user = get_user_by_uid(uid)
-        if user:
-            activate_user(user[1])  # Activate the user normally
-            # Update user plan in DB
-            conn = get_connection()
-            cur = conn.cursor()
-            cur.execute("UPDATE users SET plan = %s WHERE telegram_id = %s", (plan, user[1]))
-            conn.commit()
-            cur.close()
-            conn.close()
+   elif data.startswith("approve_basic:") or data.startswith("approve_plus:") or data.startswith("approve_elite:"):
+    plan = data.split(":")[0].replace("approve_", "").capitalize()
+    uid = data.split(":")[1]
+    user = get_user_by_uid(uid)
+    if user:
+        activate_user(user[1])  # Activate the user normally
+        # Update user plan and set activation date
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE users 
+            SET plan = %s, plan_activation_date = CURRENT_DATE 
+            WHERE telegram_id = %s
+        """, (plan, user[1]))
+        conn.commit()
+        cur.close()
+        conn.close()
 
 	
             await context.bot.send_message(chat_id=user[1], text=f"✅ Your account has been activated with the *{plan}* plan!")
