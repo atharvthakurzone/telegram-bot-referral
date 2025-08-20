@@ -307,6 +307,14 @@ def distribute_daily_income_once():
 	
         print(f"📊 User: {telegram_id}, Plan: {plan}, Wallet: ₹{wallet}, Income: ₹{daily_income}")
 
+        # Check if weekly bonus is due
+        weekly_bonus = 0
+        if is_weekly_bonus_due(telegram_id):
+            weekly_bonus = PLAN_BENEFITS.get(plan, {}).get("weekly_bonus", 0)
+            print(f"🎉 Weekly bonus of ₹{weekly_bonus} for {telegram_id}")
+
+        total_income = daily_income + weekly_bonus
+
         if daily_income > 0:
             new_wallet = wallet + daily_income
             with get_connection() as conn:
