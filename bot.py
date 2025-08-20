@@ -148,17 +148,17 @@ def is_weekly_bonus_due(telegram_id):
 #weekly bonus orogress
 def get_weekly_bonus_progress(telegram_id):
     user_plan_info = get_user_plan(telegram_id)
-    activate_date = user_plan_info.get("activate_date")  # should come from DB column
+    activation_date = user_plan_info.get("activation_date")  # should come from DB column
     
-    if not activate_date:
+    if not activation_date:
         return "0 / 28"
     
     # Convert string date from DB -> datetime
-    if isinstance(activate_date, str):
-        activate_date = datetime.strptime(activate_date, "%Y-%m-%d")
+    if isinstance(activation_date, str):
+        activation_date = datetime.strptime(activation_date, "%Y-%m-%d")
     
     today = datetime.now()
-    days_passed = (today - activate_date).days
+    days_passed = (today - activation_date).days
     
     if days_passed < 0:
         days_passed = 0
