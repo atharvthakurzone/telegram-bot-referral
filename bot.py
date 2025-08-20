@@ -525,6 +525,8 @@ async def cancel_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Wallet 
 async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
+        from datetime import datetime
+
         user = get_user(update.effective_user.id)
         if not user:
             await update.message.reply_text("❗ You are not registered. Use /start", reply_markup=start_menu)
@@ -553,8 +555,19 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
             referred_plan_amount = plan_amounts.get(referred_plan, 1499)
             referral_earnings += referred_plan_amount * referral_percent
 
-        # Get ACCURATE weekly bonus progress
-        weekly_bonus_progress = get_weekly_bonus_progress(telegram_id)
+        # Weekly bonus progress based on plan_activation_date
+        plan_activation_date = user_plan_info.get("plan_activation_date")
+        if plan_activation_date:
+            if isinstance(plan_activation_date, str):
+                plan_activation_date = datetime.strptime(plan_activation_date, "%Y-%m-%d")
+            today = datetime.now()
+            days_passed = (today - plan_activation_date).days
+            if days_passed < 0:
+                days_passed = 0
+            progress_days = min(days_passed, 28)
+            weekly_bonus_progress = f"{progress_days} / 28"
+        else:
+            weekly_bonus_progress = "0 / 28"
 
         # Display
         text_msg = (
@@ -600,7 +613,6 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "❌ Error accessing wallet information.",
                 reply_markup=main_menu
             )
-			
 
 # Referrals
 async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE):
