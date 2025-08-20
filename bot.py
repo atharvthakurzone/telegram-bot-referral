@@ -147,41 +147,26 @@ def is_weekly_bonus_due(telegram_id):
 
 #weekly bonus orogress
 def get_weekly_bonus_progress(telegram_id):
-    """Calculate weekly bonus progress based on activation date"""
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT plan_activation_date 
-            FROM users 
-            WHERE telegram_id = %s AND plan_activation_date IS NOT NULL
-        """, (telegram_id,))
-        
-        result = cur.fetchone()
-        if not result:
-            return "0 / 28"  # Not activated yet
-            
-        activation_date = result[0]
-        today = datetime.date.today()
-        
-        # Calculate days since activation
-        days_since_activation = (today - activation_date).days
-        
-        if days_since_activation < 0:
-            return "0 / 28"  # Invalid date
-            
-        # Calculate progress in current 28-day cycle (4 weeks)
-        days_in_current_cycle = days_since_activation % 28
-        weeks_completed = days_since_activation // 28
-        
-        return f"{days_in_current_cycle} / 28"
-        
-    except Exception as e:
-        print(f"Error calculating weekly progress: {e}")
+    user_plan_info = get_user_plan(telegram_id)
+    activate_date = user_plan_info.get("activate_date")  # should come from DB column
+    
+    if not activate_date:
         return "0 / 28"
-    finally:
-        cur.close()
-        conn.close()
+    
+    # Convert string date from DB -> datetime
+    if isinstance(activate_date, str):
+        activate_date = datetime.strptime(activate_date, "%Y-%m-%d")
+    
+    today = datetime.now()
+    days_passed = (today - activate_date).days
+    
+    if days_passed < 0:
+        days_passed = 0
+    
+    # cap at 28 days
+    progress_days = min(days_passed, 28)
+    
+    return f"{progress_days} / 28"
 
 #active referred users
 def get_active_referred_users(referrer_uid):
