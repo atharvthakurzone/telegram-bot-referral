@@ -1434,4 +1434,3 @@ if __name__ == "__main__":
         webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
     )
 
-
