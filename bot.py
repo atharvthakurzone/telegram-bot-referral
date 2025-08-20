@@ -556,18 +556,18 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
             referral_earnings += referred_plan_amount * referral_percent
 
         # Weekly bonus progress based on plan_activation_date
-        plan_activation_date = user_plan_info.get("plan_activation_date")
+        plan_activation_date = user[15]  # replace with actual index in your `user` tuple
+        weekly_bonus_progress = "0 / 28"
         if plan_activation_date:
-            if isinstance(plan_activation_date, str):
-                plan_activation_date = datetime.strptime(plan_activation_date, "%Y-%m-%d")
-            today = datetime.now()
-            days_passed = (today - plan_activation_date).days
-            if days_passed < 0:
-                days_passed = 0
-            progress_days = min(days_passed, 28)
-            weekly_bonus_progress = f"{progress_days} / 28"
+			try:
+                activation_date = datetime.strptime(plan_activation_date, "%Y-%m-%d")
+                days_active = (datetime.now().date() - activation_date).days
+            
+                weekly_bonus_progress = f"{min(days_active, 28)} / 28"
+            except Exception as e:
+                print(f"Error calculating weekly bonus: {e}")
         else:
-            weekly_bonus_progress = "0 / 28"
+            weekly_bonus_progress = "-0 / 28"
 
         # Display
         text_msg = (
