@@ -414,23 +414,45 @@ async def cancel_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Wallet
 async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
-    if user:
-        text_msg = (
-            f"👤 Username: {user[2]}\n"
-            f"💰 Wallet: ₹{user[5]}\n"
-            f"🔗 Your referral code: {user[3]}"
+    if not user:
+        await update.message.reply_text(
+            "❗ You are not registered. Use /start", reply_markup=start_menu
         )
+        return
 
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton("💸 Withdraw", callback_data="wallet_withdraw"),
-                InlineKeyboardButton("📄 My Withdrawals", callback_data="wallet_history")
-            ]
-        ])
+    telegram_id = update.effective_user.id
+    user_plan_info = get_user_plan(telegram_id)
+    user_plan_name = user_plan_info.get('name', 'Basic')  # fallback to Basic if not found
 
-        await update.message.reply_text(text_msg, reply_markup=keyboard)
-    else:
-        await update.message.reply_text("❗ You are not registered. Use /start", reply_markup=start_menu)
+    # Set referral percentage based on user plan
+    referral_percent = {"Basic": 0.10, "Plus": 0.12, "Elite": 0.15}.get(user_plan_name, 0)
+
+    # Calculate referral earnings
+    referral_earnings = 0
+    active_referred_users = get_active_referred_users(telegram_id)  # only activated referred users
+    for referred in active_referred_users:
+        referred_plan_amount = get_user_plan(referred['telegram_id']).get('amount', 0)
+        referral_earnings += referred_plan_amount * referral_percent
+
+    # For now, last withdrawal and weekly bonus progress placeholders
+    last_withdrawal = "None"
+    weekly_bonus_progress = "0 / 28"
+
+    text_msg = (
+        f"💰 Wallet Balance: ₹{user[5]}\n"
+        f"📈 Referral Earnings: ₹{int(referral_earnings)}\n"
+        f"📝 Last Withdrawal: {last_withdrawal}\n"
+        f"🎁 Weekly Bonus Progress: {weekly_bonus_progress} days completed"
+    )
+
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("💸 Withdraw", callback_data="wallet_withdraw"),
+            InlineKeyboardButton("📄 My Withdrawals", callback_data="wallet_history")
+        ]
+    ])
+
+    await update.message.reply_text(text_msg, reply_markup=keyboard)
 
 # Referrals
 async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE):
