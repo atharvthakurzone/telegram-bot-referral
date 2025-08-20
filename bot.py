@@ -561,7 +561,11 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if plan_activation_date:
             try:
-                activation_date = datetime.strptime(plan_activation_date, "%Y-%m-%d").date()
+                if isinstance(plan_activation_date, date):
+                    activation_date = plan_activation_date
+                else:
+                    activation_date = datetime.strptime(plan_activation_date, "%Y-%m-%d").date()
+					
                 days_active = (datetime.now().date() - activation_date).days
 
                 # Cap progress at 28 days
