@@ -556,7 +556,7 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
             referral_earnings += referred_plan_amount * referral_percent
 
         # Weekly bonus progress based on plan_activation_date
-        plan_activation_date = user[15]  # replace with actual index in your `user` tuple
+        plan_activation_date = user[14]  # replace with actual index in your `user` tuple
         weekly_bonus_progress = "0 / 28"
 
         if plan_activation_date:
