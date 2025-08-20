@@ -671,7 +671,7 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
             earnings_days = str(days_active)
         except Exception as e:
             print(f"Error calculating earnings days: {e}")
-            earnings_days = "0"
+            earnings_days = "N/A"
 
     # Build message
     msg = (
