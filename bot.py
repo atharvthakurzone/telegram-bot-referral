@@ -1248,22 +1248,22 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
 		
 
    elif data.startswith("approve_basic:") or data.startswith("approve_plus:") or data.startswith("approve_elite:"):
-    plan = data.split(":")[0].replace("approve_", "").capitalize()
-    uid = data.split(":")[1]
-    user = get_user_by_uid(uid)
-    if user:
-        activate_user(user[1])  # Activate the user normally
+       plan = data.split(":")[0].replace("approve_", "").capitalize()
+       uid = data.split(":")[1]
+       user = get_user_by_uid(uid)
+       if user:
+           activate_user(user[1])  # Activate the user normally
         # Update user plan and set activation date
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            UPDATE users 
-            SET plan = %s, plan_activation_date = CURRENT_DATE 
-            WHERE telegram_id = %s
-        """, (plan, user[1]))
-        conn.commit()
-        cur.close()
-        conn.close()
+           conn = get_connection()
+           cur = conn.cursor()
+           cur.execute("""
+               UPDATE users 
+               SET plan = %s, plan_activation_date = CURRENT_DATE 
+               WHERE telegram_id = %s
+           """, (plan, user[1]))
+           conn.commit()
+           cur.close()
+           conn.close()
 
 	
             await context.bot.send_message(chat_id=user[1], text=f"✅ Your account has been activated with the *{plan}* plan!")
