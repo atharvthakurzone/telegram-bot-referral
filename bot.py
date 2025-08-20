@@ -657,8 +657,9 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     status = "✅ Activated" if data['activation_status'] else "❌ Not Activated"
 
     # ✅ Calculate Earnings Days from plan_activation_date
+    plan_activation_date = user[14] 
     earnings_days = "0"
-    plan_activation_date = data.get("plan_activation_date")
+    
     if plan_activation_date:
         try:
             if isinstance(plan_activation_date, date):
