@@ -644,27 +644,33 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     from datetime import datetime, date
 
     data = get_user_profile(update.effective_user.id)
-	print("📌 DEBUG user profile:", data, type(data))
+    print("📌 DEBUG user profile:", data, type(data))
 
     if not data:
-        await update.message.reply_text("❗ You are not registered. Use /start", reply_markup=start_menu)
+        await update.message.reply_text(
+            "❗ You are not registered. Use /start", 
+            reply_markup=start_menu
+        )
         return
 
     # Handle Referred By
+    referred_by = None
+    if isinstance(data, tuple):
+        referred_by = data[13] if len(data) > 13 else None
+        plan_activation_date = data[14] if len(data) > 14 else None
+    elif isinstance(data, dict):
+        referred_by = data.get('referred_by')
+        plan_activation_date = data.get('plan_activation_date')
+    else:
+        plan_activation_date = None
+
     ref_by = "N/A"
-    referred_by = data[13]  # adjust index if needed for 'referred_by' tuple
-    if isinstance(referred_by, dict):
+    if referred_by and isinstance(referred_by, dict):
         ref_by = f"[{referred_by['username']}](tg://user?id={referred_by['telegram_id']}) (UID: {referred_by['uid']})"
 
-    # Activation status
-    status = "✅ Activated" if data[12] else "❌ Not Activated"  # index 12 = activation_status
-
-    # ✅ Calculate Earnings Days from plan_activation_date
-    plan_activation_date = data[14]  # tuple index for plan_activation_date
-    print("📌 DEBUG plan_activation_date raw:", plan_activation_date, type(plan_activation_date))
+    status = "✅ Activated" if (data[12] if isinstance(data, tuple) else data.get('activation_status')) else "❌ Not Activated"
 
     earnings_days = "0"
-    
     if plan_activation_date:
         try:
             if isinstance(plan_activation_date, date):
@@ -672,21 +678,18 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 activation_date = datetime.strptime(str(plan_activation_date), "%Y-%m-%d").date()
 
-            print("📌 DEBUG activation_date parsed:", activation_date, type(activation_date))
-
             days_active = (datetime.now().date() - activation_date).days
             earnings_days = str(days_active)
         except Exception as e:
             print("❌ DEBUG Error calculating earnings days:", e)
             earnings_days = "N/A"
 
-    # Build message
     msg = (
-        f"🆔 User ID: {data[0]}\n"           # adjust index for user_uid
-        f"👤 Username: {data[1]}\n"          # adjust index for username
-        f"🔗 Referral Code: {data[0]}\n"     # user_uid again
+        f"🆔 User ID: {data[0] if isinstance(data, tuple) else data.get('user_uid')}\n"
+        f"👤 Username: {data[1] if isinstance(data, tuple) else data.get('username')}\n"
+        f"🔗 Referral Code: {data[0] if isinstance(data, tuple) else data.get('user_uid')}\n"
         f"🔓 Status: {status}\n"
-        f"📅 Days Since Registration: {data[11]}\n"  # adjust index for registered_days
+        f"📅 Days Since Registration: {data[11] if isinstance(data, tuple) else data.get('registered_days')}\n"
         f"💸 Earnings Days Completed: {earnings_days}\n"
         f"👤 Referred By: {ref_by}"
     )
