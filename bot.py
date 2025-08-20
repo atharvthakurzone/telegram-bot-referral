@@ -413,46 +413,87 @@ async def cancel_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Wallet
 async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = get_user(update.effective_user.id)
-    if not user:
-        await update.message.reply_text(
-            "❗ You are not registered. Use /start", reply_markup=start_menu
+    try:
+        user = get_user(update.effective_user.id)
+        if not user:
+            await update.message.reply_text("❗ You are not registered. Use /start", reply_markup=start_menu)
+            return
+
+        telegram_id = update.effective_user.id
+        wallet_balance = user[5]  # wallet balance
+        username = user[2] or "User"
+        referral_code = user[3] or "N/A"
+        
+        # Get user's current plan
+        user_plan_info = get_user_plan(telegram_id)
+        user_plan_name = user_plan_info.get('name', 'Basic')
+        
+        # Get ALL referred users (for count display)
+        all_referred_users = get_referred_users(referral_code)
+        total_referrals_count = len(all_referred_users) if all_referred_users else 0
+        
+        # Get only ACTIVE referred users (for earnings calculation)
+        active_referred_users = get_active_referred_users(referral_code)
+        active_referrals_count = len(active_referred_users) if active_referred_users else 0
+
+        # Calculate accurate referral earnings based on each referred user's plan
+        referral_earnings = 0
+        referral_percent = {"Basic": 0.10, "Plus": 0.12, "Elite": 0.15}.get(user_plan_name, 0.10)
+        
+        plan_amounts = {"Basic": 1499, "Plus": 4499, "Elite": 9500}
+        
+        for referred_user in active_referred_users:
+            referred_plan = referred_user['plan'] or 'Basic'
+            referred_plan_amount = plan_amounts.get(referred_plan, 1499)
+            referral_earnings += referred_plan_amount * referral_percent
+
+        # Calculate weekly bonus progress
+        registered_date = user[10]  # Assuming index 10 is registration date
+        if registered_date and isinstance(registered_date, datetime.date):
+            days_registered = (datetime.date.today() - registered_date).days
+            weekly_progress = days_registered % 28  # 4 weeks = 28 days
+            weekly_bonus_progress = f"{weekly_progress} / 28"
+        else:
+            weekly_bonus_progress = "0 / 28"
+
+        # Check if user has any withdrawals
+        last_withdrawal = "None"  # You'll need to implement this if you track withdrawals
+
+        text_msg = (
+            f"👤 Username: {username}\n"
+            f"💰 Wallet Balance: ₹{wallet_balance}\n"
+            f"📈 Referral Earnings: ₹{int(referral_earnings)}\n"
+            f"📝 Last Withdrawal: {last_withdrawal}\n"
+            f"🎁 Weekly Bonus Progress: {weekly_bonus_progress}\n"
+            f"👥 Total Referrals: {total_referrals_count} users\n"
+            f"✅ Active Referrals: {active_referrals_count} users\n"
+            f"🔗 Your Referral Code: `{referral_code}`"
         )
-        return
 
-    telegram_id = update.effective_user.id
-    user_plan_info = get_user_plan(telegram_id)
-    user_plan_name = user_plan_info.get('name', 'Basic')  # fallback to Basic if not found
+        # Update the withdrawal button message based on active referrals
+        if active_referrals_count >= 1:
+            withdraw_text = "💸 Withdraw"
+        else:
+            withdraw_text = "🔒 Withdraw (0/1)"
 
-    # Set referral percentage based on user plan
-    referral_percent = {"Basic": 0.10, "Plus": 0.12, "Elite": 0.15}.get(user_plan_name, 0)
+        keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(withdraw_text, callback_data="wallet_withdraw"),
+                InlineKeyboardButton("📄 My Withdrawals", callback_data="wallet_history")
+            ]
+        ])
 
-    # Calculate referral earnings
-    referral_earnings = 0
-    active_referred_users = get_active_referred_users(telegram_id)  # only activated referred users
-    for referred in active_referred_users:
-        referred_plan_amount = get_user_plan(referred['telegram_id']).get('amount', 0)
-        referral_earnings += referred_plan_amount * referral_percent
+        await update.message.reply_text(text_msg, reply_markup=keyboard, parse_mode="Markdown")
+        
+    except Exception as e:
+        print(f"Error in wallet function: {e}")
+        import traceback
+        traceback.print_exc()
+        await update.message.reply_text(
+            "❌ Error accessing wallet information. Please try again later.",
+            reply_markup=main_menu
+        )
 
-    # For now, last withdrawal and weekly bonus progress placeholders
-    last_withdrawal = "None"
-    weekly_bonus_progress = "0 / 28"
-
-    text_msg = (
-        f"💰 Wallet Balance: ₹{user[5]}\n"
-        f"📈 Referral Earnings: ₹{int(referral_earnings)}\n"
-        f"📝 Last Withdrawal: {last_withdrawal}\n"
-        f"🎁 Weekly Bonus Progress: {weekly_bonus_progress} days completed"
-    )
-
-    keyboard = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("💸 Withdraw", callback_data="wallet_withdraw"),
-            InlineKeyboardButton("📄 My Withdrawals", callback_data="wallet_history")
-        ]
-    ])
-
-    await update.message.reply_text(text_msg, reply_markup=keyboard)
 
 # Referrals
 async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE):
