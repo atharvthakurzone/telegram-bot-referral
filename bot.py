@@ -650,14 +650,15 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Handle Referred By
     ref_by = "N/A"
-    if isinstance(data['referred_by'], dict):
-        ref_by = f"[{data['referred_by']['username']}](tg://user?id={data['referred_by']['telegram_id']}) (UID: {data['referred_by']['uid']})"
+    referred_by = data[13]  # adjust index if needed for 'referred_by' tuple
+    if isinstance(referred_by, dict):
+        ref_by = f"[{referred_by['username']}](tg://user?id={referred_by['telegram_id']}) (UID: {referred_by['uid']})"
 
     # Activation status
-    status = "✅ Activated" if data['activation_status'] else "❌ Not Activated"
+    status = "✅ Activated" if data[12] else "❌ Not Activated"  # index 12 = activation_status
 
     # ✅ Calculate Earnings Days from plan_activation_date
-    plan_activation_date = data.get('plan_activation_date')
+    plan_activation_date = data[14]  # tuple index for plan_activation_date
     print("📌 DEBUG plan_activation_date raw:", plan_activation_date, type(plan_activation_date))
 
     earnings_days = "0"
@@ -665,8 +666,6 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if plan_activation_date:
         try:
             if isinstance(plan_activation_date, date):
-                activation_date = plan_activation_date
-            elif isinstance(plan_activation_date, date):
                 activation_date = plan_activation_date
             else:
                 activation_date = datetime.strptime(str(plan_activation_date), "%Y-%m-%d").date()
@@ -681,11 +680,11 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Build message
     msg = (
-        f"🆔 User ID: {data['user_uid']}\n"
-        f"👤 Username: {data['username']}\n"
-        f"🔗 Referral Code: {data['user_uid']}\n"
+        f"🆔 User ID: {data[0]}\n"           # adjust index for user_uid
+        f"👤 Username: {data[1]}\n"          # adjust index for username
+        f"🔗 Referral Code: {data[0]}\n"     # user_uid again
         f"🔓 Status: {status}\n"
-        f"📅 Days Since Registration: {data['registered_days']}\n"
+        f"📅 Days Since Registration: {data[11]}\n"  # adjust index for registered_days
         f"💸 Earnings Days Completed: {earnings_days}\n"
         f"👤 Referred By: {ref_by}"
     )
