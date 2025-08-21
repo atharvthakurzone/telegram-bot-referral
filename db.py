@@ -52,7 +52,7 @@ def add_telegram_column_if_missing():
     try:
         # Try adding the column
         cur.execute("""
-            ALTER TABLE withdraw 
+            ALTER TABLE withdraws 
             ADD COLUMN IF NOT EXISTS telegram_id BIGINT
         """)
         conn.commit()
