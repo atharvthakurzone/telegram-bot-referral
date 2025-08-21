@@ -1182,7 +1182,7 @@ async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "UPDATE users SET plan = %s, activation_date = CURRENT_DATE WHERE uid = %s",
+                    "UPDATE users SET plan = %s, plan_activation_date = CURRENT_DATE WHERE user_uid = %s",
                     (action, uid)
                 )
                 conn.commit()
