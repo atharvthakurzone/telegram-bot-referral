@@ -670,7 +670,7 @@ async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE
 
             await context.bot.send_message(
                 chat_id=telegram_id,
-                text=f"💰 Please be informed, your withdrawal of ₹{amount} has been approved. The amount will be credited to your UPI ID shortly.\n\n🪙 New Balance: ₹{new_balance}"
+                text=f"💰 Please be informed, your withdrawal of ₹{amount} has been approved. The amount will be credited to your UPI ID shortly.\n\n🏦 New Balance: ₹{new_balance}"
             )
             await query.edit_message_text(f"✅ Approved withdrawal for {telegram_id}, amount ₹{amount}")
 
