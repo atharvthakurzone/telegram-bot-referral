@@ -30,6 +30,24 @@ def init_db():
             conn.commit()
 
 
+def init_withdrawals_table():
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS withdrawals (
+                    id SERIAL PRIMARY KEY,
+                    user_uid TEXT NOT NULL,
+                    amount INTEGER NOT NULL,
+                    mobile TEXT NOT NULL,
+                    upi TEXT NOT NULL,
+                    status TEXT DEFAULT 'pending',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            conn.commit()
+
+
+
 def generate_uid():
     with get_connection() as conn:
         with conn.cursor() as cur:
