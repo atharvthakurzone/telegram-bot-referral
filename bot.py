@@ -1150,6 +1150,8 @@ async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT
     action = parts[1]               # basic / plus / elite / reject
     uid = parts[2]
 
+    plan_name = action.capitalize()   # 👈 "Basic" / "Plus" / "Elite"
+
     # Get user by UID
     user = get_user_by_uid(uid)
     if not user:
@@ -1178,22 +1180,28 @@ async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "UPDATE users SET plan = %s, plan_activation_date = CURRENT_DATE WHERE user_uid = %s",
-                    (action, uid)
+                    """
+                    UPDATE users
+                    SET plan = %s,
+                        activation_status = 'active',
+                        plan_activation_date = CURRENT_DATE
+                    WHERE user_uid = %s
+                    """,
+                    (plan_name, uid)   # 👈 use plan_name
                 )
                 conn.commit()
 
         # Notify user
         await context.bot.send_message(
             chat_id=user[1],  # telegram_id
-            text=f"✅ Your account has been activated with the {action.capitalize()} plan!"
+            text=f"✅ Your account has been activated with the {plan_name} plan!"  # 👈 use plan_name
         )
 
         # Update admin message
         if query.message.photo:
-            await query.edit_message_caption(f"✅ Activated {action.capitalize()} plan for UID {uid}")
+            await query.edit_message_caption(f"✅ Activated {plan_name} plan for UID {uid}")  # 👈 use plan_name
         else:
-            await query.edit_message_text(f"✅ Activated {action.capitalize()} plan for UID {uid}")
+            await query.edit_message_text(f"✅ Activated {plan_name} plan for UID {uid}")  # 👈 use plan_name
 
     except Exception as e:
         print(f"❌ Error activating user {uid}: {e}")
