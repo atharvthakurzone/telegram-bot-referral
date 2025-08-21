@@ -1153,7 +1153,11 @@ async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT
     # Get user by UID
     user = get_user_by_uid(uid)
     if not user:
-        await query.edit_message_text("❌ User not found")
+        # Handle photo vs text
+        if query.message.photo:
+            await query.edit_message_caption("❌ User not found")
+        else:
+            await query.edit_message_text("❌ User not found")
         return
 
     if action == "reject":
@@ -1162,7 +1166,11 @@ async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT
             chat_id=user[1],  # telegram_id
             text="❌ Your activation request has been rejected."
         )
-        await query.edit_message_text(f"❌ Rejected activation for UID {uid}")
+        # Handle photo vs text
+        if query.message.photo:
+            await query.edit_message_caption(f"❌ Rejected activation for UID {uid}")
+        else:
+            await query.edit_message_text(f"❌ Rejected activation for UID {uid}")
         return
 
     # ✅ Otherwise, activate the chosen plan
@@ -1182,11 +1190,17 @@ async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT
         )
 
         # Update admin message
-        await query.edit_message_text(f"✅ Activated {action.capitalize()} plan for UID {uid}")
+        if query.message.photo:
+            await query.edit_message_caption(f"✅ Activated {action.capitalize()} plan for UID {uid}")
+        else:
+            await query.edit_message_text(f"✅ Activated {action.capitalize()} plan for UID {uid}")
 
     except Exception as e:
         print(f"❌ Error activating user {uid}: {e}")
-        await query.edit_message_text("❌ Failed to activate user. Please try again later.")
+        if query.message.photo:
+            await query.edit_message_caption("❌ Failed to activate user. Please try again later.")
+        else:
+            await query.edit_message_text("❌ Failed to activate user. Please try again later.")
 
 
 # Menu Handler
