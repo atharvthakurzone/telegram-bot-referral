@@ -628,8 +628,8 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Inline buttons for admin
     keyboard = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{telegram_id}_{amount}"),
-            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{telegram_id}_{amount}")
+            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_id}_{amount}"),
+            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{user_id}_{amount}")
         ]
     ])
 
