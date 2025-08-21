@@ -51,27 +51,6 @@ ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 init_db()
 init_withdrawals_table()
 
-def add_telegram_column_if_missing():
-    conn = get_connection()
-    cur = conn.cursor()
-    try:
-        # Correct table name
-        cur.execute("""
-            ALTER TABLE withdrawals 
-            ADD COLUMN IF NOT EXISTS telegram_id BIGINT
-        """)
-        conn.commit()
-        print("✅ Column 'telegram_id' added or already exists.")
-    except Exception as e:
-        print("❌ Error adding column:", e)
-    finally:
-        cur.close()
-        conn.close()
-
-
-add_telegram_column_if_missing()
-
-
 def add_last_income_date_column():
     with get_connection() as conn:
         with conn.cursor() as cur:
