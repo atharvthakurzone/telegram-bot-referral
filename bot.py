@@ -72,13 +72,6 @@ def update_wallet_balance(telegram_id: int, new_balance: int):
             )
             conn.commit()
 
-def get_user_by_uid(uid):
-    """Get user by UID instead of telegram_id"""
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM users WHERE uid = %s", (uid,))
-            return cur.fetchone()
-
 def get_withdrawals_by_user(user_uid):
     with get_connection() as conn:
         with conn.cursor() as cur:
