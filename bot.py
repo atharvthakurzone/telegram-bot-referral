@@ -60,12 +60,12 @@ def add_last_income_date_column():
 add_last_income_date_column()
 
 # --- Update wallet balance in DB ---
-def update_wallet_balance(user_id: str, new_balance: int):
+def update_wallet_balance(telegram_id: int, new_balance: int):
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "UPDATE users SET wallet = %s WHERE user_uid = %s",
-                (new_balance, str(user_id))
+                "UPDATE users SET wallet = %s WHERE telegram_id = %s",
+                (new_balance, telegram_id)
             )
             conn.commit()
 
@@ -552,45 +552,46 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # --- Admin Approve/Reject ---
 async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+    await query.answer()
+    
     data = query.data.split("_")
-
-    action = data[0]  # approve/reject
-    user_id = int(data[1])
+    action = data[0]  # approve / reject
+    user_id = int(data[1])  # telegram_id
     amount = int(data[2])
 
-    print("📌 DEBUG Admin Action:", action, user_id, amount)
+    try:
+        user = get_user(user_id)  # Fetch user from Postgres
+        if not user:
+            await query.edit_message_text(f"❌ User {user_id} not found in DB")
+            return
 
-    user = get_user(user_id)
-    print("📌 DEBUG User fetched:", user)
-
-    if action == "approve":
-        try:
-            new_balance = user[5] - amount
-            print("📌 DEBUG New Balance:", new_balance)
-
-            update_wallet_balance(user_id, new_balance)
-            print("📌 DEBUG Wallet updated in DB")
+        if action == "approve":
+            # Deduct amount from wallet in DB
+            new_balance = user[5] - amount  # wallet is index 5
+            with get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE users SET wallet = %s WHERE telegram_id = %s",
+                        (new_balance, user_id)
+                    )
+                    conn.commit()
 
             await context.bot.send_message(
                 chat_id=user_id,
                 text=f"✅ Your withdrawal of ₹{amount} has been approved.\n💼 New Balance: ₹{new_balance}"
             )
-            print("📌 DEBUG Sent message to user")
-
             await query.edit_message_text(f"✅ Approved withdrawal for {user_id}, amount ₹{amount}")
-            print("📌 DEBUG Edited admin message")
 
-        except Exception as e:
-            print("❌ ERROR in approve block:", str(e))
+        elif action == "reject":
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=f"❌ Your withdrawal of ₹{amount} has been rejected. Please contact support."
+            )
+            await query.edit_message_text(f"❌ Rejected withdrawal for {user_id}, amount ₹{amount}")
 
-    elif action == "reject":
-        await context.bot.send_message(
-            chat_id=user_id,
-            text=f"❌ Your withdrawal of ₹{amount} has been rejected. Please contact support."
-        )
-        await query.edit_message_text(f"❌ Rejected withdrawal for {user_id}, amount ₹{amount}")
-        print("📌 DEBUG Reject executed successfully")
-		
+    except Exception as e:
+        print(f"❌ ERROR in approve/reject block: {e}")
+        await query.edit_message_text(f"❌ Error processing request: {e}")		
 
 
 #Adds media support
