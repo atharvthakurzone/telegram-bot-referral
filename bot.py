@@ -47,6 +47,7 @@ TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 
 init_db()
+init_withdrawals_table()
 
 def add_last_income_date_column():
     with get_connection() as conn:
@@ -68,6 +69,17 @@ def update_wallet_balance(telegram_id: int, new_balance: int):
                 (new_balance, telegram_id)
             )
             conn.commit()
+
+def get_withdrawals_by_user(user_uid):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute('''
+                SELECT amount, status, created_at
+                FROM withdrawals
+                WHERE user_uid = %s
+                ORDER BY created_at DESC
+            ''', (user_uid,))
+            return cur.fetchall()
 
 
 ASK_AMOUNT, ASK_MOBILE, ASK_UPI = range(3)
@@ -439,7 +451,49 @@ async def wallet_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
     elif query.data == "wallet_history":
-        await query.message.reply_text("📄 You have not made any Withdrawal Request.")
+        user = get_user(query.from_user.id)
+        if not user:
+            await query.message.reply_text("❗ You are not registered. Use /start")
+            return
+
+        user_uid = user[8]
+
+        try:
+            from db import get_connection  # your DB connection function
+
+            with get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute('''
+                        SELECT amount, mobile, upi, status, created_at
+                        FROM withdrawals
+                        WHERE user_uid = %s
+                        ORDER BY created_at DESC
+                        LIMIT 10
+                    ''', (user_uid,))
+                    rows = cur.fetchall()
+
+            if not rows:
+                await query.message.reply_text("📄 You have no withdrawal history yet.")
+                return
+
+            history_text = "📄 *Your Last Withdrawals:*\n\n"
+            for row in rows:
+                amount, mobile, upi, status, created_at = row
+                # Add emojis for status
+                status_emoji = "✅" if status == "approved" else "❌" if status == "rejected" else "⏳"
+                history_text += (
+                    f"💰 Amount: ₹{amount}\n"
+                    f"📞 Mobile: {mobile}\n"
+                    f"🏦 UPI: {upi}\n"
+                    f"📌 Status: {status_emoji} {status.capitalize()}\n"
+                    f"🕒 Requested On: {created_at}\n\n"
+                )
+
+            await query.message.reply_text(history_text, parse_mode="Markdown")
+
+        except Exception as e:
+            print(f"Error fetching withdrawal history: {e}")
+            await query.message.reply_text("❌ Failed to fetch withdrawal history. Try again later.")
 
 
 # --- Withdraw Start ---
@@ -506,6 +560,8 @@ async def withdraw_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- Ask for UPI ---
 async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    from db import get_connection  # make sure this import exists at top of your file
+
     upi = update.message.text.strip()
     context.user_data["withdraw_upi"] = upi
 
@@ -513,10 +569,30 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mobile = context.user_data["withdraw_mobile"]
     wallet_balance = context.user_data["wallet_balance"]
 
+    user = get_user(update.effective_user.id)
+    if not user:
+        await update.message.reply_text("❗ You are not registered. Use /start")
+        return ConversationHandler.END
+
     user_id = update.effective_user.id
+    user_uid = user[8]  # UID from DB
     username = update.effective_user.username or update.effective_user.first_name
 
-    # Build admin message (✅ no Markdown to avoid parse errors)
+    # ✅ Insert withdrawal request into DB
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute('''
+                    INSERT INTO withdrawals (user_uid, amount, mobile, upi)
+                    VALUES (%s, %s, %s, %s)
+                ''', (user_uid, amount, mobile, upi))
+                conn.commit()
+    except Exception as e:
+        print(f"❌ ERROR inserting withdrawal into DB: {e}")
+        await update.message.reply_text("❌ Error saving your request. Please try again later.")
+        return ConversationHandler.END
+
+    # Build admin message
     msg = (
         f"💸 New withdrawal request!\n\n"
         f"👤 User: {username} (ID: {user_id})\n"
@@ -529,12 +605,12 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Inline buttons for admin
     keyboard = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_id}_{amount}_{upi}"),
-            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{user_id}_{amount}_{upi}")
+            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_uid}_{amount}"),
+            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{user_uid}_{amount}")
         ]
     ])
 
-    # Send to admin (⚡ removed parse_mode to prevent crash)
+    # Send to admin
     await context.bot.send_message(
         chat_id=ADMIN_CHAT_ID,
         text=msg,
