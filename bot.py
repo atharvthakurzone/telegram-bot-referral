@@ -30,7 +30,7 @@ from telegram.ext import (
     filters, ContextTypes, ConversationHandler
 )
 from db import (
-    init_db, add_user, get_user, get_referred_users,
+    init_db, init_withdrawals_table, add_user, get_user, get_referred_users,
     get_user_profile, get_user_by_uid, activate_user,
     is_user_activated, get_all_users, count_users,
     get_pending_users
