@@ -42,6 +42,7 @@ def init_withdrawals_table():
                     upi TEXT NOT NULL,
                     status TEXT DEFAULT 'pending',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    telegram_id BIGINT  -- ← NEW COLUMN
                 )
             ''')
             conn.commit()
