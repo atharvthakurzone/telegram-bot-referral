@@ -593,9 +593,9 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
             with conn.cursor() as cur:
                 # Insert new withdrawal
                 cur.execute('''
-                    INSERT INTO withdrawals (user_uid, amount, mobile, upi)
-                    VALUES (%s, %s, %s, %s)
-                ''', (user_uid, amount, mobile, upi))
+                    INSERT INTO withdrawals (user_uid, telegram_id, amount, mobile, upi, status)
+                    VALUES (%s, %s, %s, %s, %s, 'pending')
+                ''', (user_uid, user_id, amount, mobile, upi))
 
                 # 🔹 Keep only latest 10 withdrawals per user
                 cur.execute('''
@@ -655,42 +655,55 @@ async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     data = query.data.split("_")
     action = data[0]  # approve / reject
-    telegram_id = int(data[1])  # telegram_id
+    telegram_id = int(data[1])  
     amount = int(data[2])
 
     try:
-        user = get_user_by_uid(user_uid)  # Fetch user from Postgres
+        user = get_user(telegram_id)  # ✅ fetch by telegram_id
         if not user:
-            await query.edit_message_text(f"❌ User with UID {user_uid} not found in DB")
+            await query.edit_message_text(f"❌ User {telegram_id} not found in DB")
             return
 
         if action == "approve":
-            # Deduct amount from wallet in DB
-            new_balance = user[5] - amount  # wallet is index 5
+            new_balance = user[5] - amount  # wallet balance at index 5
             with get_connection() as conn:
                 with conn.cursor() as cur:
+                    # Deduct from wallet
                     cur.execute(
                         "UPDATE users SET wallet = %s WHERE telegram_id = %s",
-                        (new_balance, user_id)
+                        (new_balance, telegram_id)
+                    )
+                    # Update withdrawal request status
+                    cur.execute(
+                        "UPDATE withdrawals SET status = 'approved' WHERE telegram_id = %s AND amount = %s AND status = 'pending'",
+                        (telegram_id, amount)
                     )
                     conn.commit()
 
             await context.bot.send_message(
-                chat_id=user_id,
+                chat_id=telegram_id,
                 text=f"✅ Your withdrawal of ₹{amount} has been approved.\n💼 New Balance: ₹{new_balance}"
             )
-            await query.edit_message_text(f"✅ Approved withdrawal for {user_id}, amount ₹{amount}")
+            await query.edit_message_text(f"✅ Approved withdrawal for {telegram_id}, amount ₹{amount}")
 
         elif action == "reject":
+            with get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE withdrawals SET status = 'rejected' WHERE telegram_id = %s AND amount = %s AND status = 'pending'",
+                        (telegram_id, amount)
+                    )
+                    conn.commit()
+
             await context.bot.send_message(
-                chat_id=user_id,
+                chat_id=telegram_id,
                 text=f"❌ Your withdrawal of ₹{amount} has been rejected. Please contact support."
             )
-            await query.edit_message_text(f"❌ Rejected withdrawal for {user_id}, amount ₹{amount}")
+            await query.edit_message_text(f"❌ Rejected withdrawal for {telegram_id}, amount ₹{amount}")
 
     except Exception as e:
         print(f"❌ ERROR in approve/reject block: {e}")
-        await query.edit_message_text(f"❌ Error processing request: {e}")		
+        await query.edit_message_text(f"❌ Error processing request: {e}")
 
 
 #Adds media support
