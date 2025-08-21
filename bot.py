@@ -50,6 +50,7 @@ ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 
 init_db()
 init_withdrawals_table()
+add_telegram_column_if_missing()
 
 def add_last_income_date_column():
     with get_connection() as conn:
