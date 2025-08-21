@@ -41,7 +41,7 @@ def init_withdrawals_table():
                     mobile TEXT NOT NULL,
                     upi TEXT NOT NULL,
                     status TEXT DEFAULT 'pending',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     telegram_id BIGINT
                 )
             ''')
