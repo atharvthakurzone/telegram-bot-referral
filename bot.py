@@ -11,8 +11,6 @@ sys.stdout.reconfigure(line_buffering=True)
 
 from telegram.ext import ApplicationBuilder
 
-from db import add_telegram_column_if_missing
-
 from telegram.constants import ChatAction
 
 from telegram import Update
