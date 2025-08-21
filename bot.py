@@ -70,6 +70,13 @@ def update_wallet_balance(telegram_id: int, new_balance: int):
             )
             conn.commit()
 
+def get_user_by_uid(uid):
+    """Get user by UID instead of telegram_id"""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM users WHERE uid = %s", (uid,))
+            return cur.fetchone()
+
 def get_withdrawals_by_user(user_uid):
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -619,8 +626,8 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Inline buttons for admin
     keyboard = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_uid}_{amount}"),
-            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{user_uid}_{amount}")
+            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_id}_{amount}"),
+            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{user_id}_{amount}")
         ]
     ])
 
@@ -650,9 +657,9 @@ async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE
     amount = int(data[2])
 
     try:
-        user = get_user(user_id)  # Fetch user from Postgres
+        user = get_user_by_uid(user_uid)  # Fetch user from Postgres
         if not user:
-            await query.edit_message_text(f"❌ User {user_id} not found in DB")
+            await query.edit_message_text(f"❌ User with UID {user_uid} not found in DB")
             return
 
         if action == "approve":
