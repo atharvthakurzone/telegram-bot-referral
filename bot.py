@@ -1183,7 +1183,7 @@ async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT
                     """
                     UPDATE users
                     SET plan = %s,
-                        activation_status = 'active',
+                        activation_status = 'TRUE',
                         plan_activation_date = CURRENT_DATE
                     WHERE user_uid = %s
                     """,
