@@ -253,8 +253,8 @@ def add_plus_referral_column():
             conn.commit()
 			
 
-# Run this ONCE at startup
-add_plus_referral_column()
+add_telegram_column_if_missing()
+
 
 def add_activation_date_column():
     """Add column to track when the user's plan was activated"""
