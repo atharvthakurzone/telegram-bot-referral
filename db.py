@@ -47,24 +47,6 @@ def init_withdrawals_table():
             ''')
             conn.commit()
 
-def add_telegram_column_if_missing():
-    conn = get_connection()
-    cur = conn.cursor()
-    try:
-        # Try adding the column
-        cur.execute("""
-            ALTER TABLE withdraws 
-            ADD COLUMN IF NOT EXISTS telegram_id BIGINT
-        """)
-        conn.commit()
-        print("✅ Column 'telegram_id' added or already exists.")
-    except Exception as e:
-        print("❌ Error adding column:", e)
-    finally:
-        cur.close()
-        conn.close()
-
-
 
 def generate_uid():
     with get_connection() as conn:
