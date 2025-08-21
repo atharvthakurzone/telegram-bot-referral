@@ -1463,12 +1463,10 @@ async def search_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(text, reply_markup=keyboard, parse_mode="Markdown")
 
-
-# Callback query
+# Callback Query
 async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     data = query.data
     print(f"🔁 Callback received: {data}")
 
@@ -1478,9 +1476,14 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         await query.edit_message_text("❌ Activation cancelled.")
         await query.message.reply_text("🏠 Main Menu:", reply_markup=main_menu)
 
-    # ✅ Admin approves user
+    # ✅ Admin approves user (activation)
     elif data.startswith("approve:"):
-        uid = data.split(":")[1]
+        try:
+            uid = int(data.split(":")[1])
+        except ValueError:
+            await query.edit_message_text("❌ Invalid UID.")
+            return
+
         user = get_user_by_uid(uid)
         if user:
             activate_user(user[1])
@@ -1495,7 +1498,12 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
 
     # ❌ Admin rejects user
     elif data.startswith("reject:"):
-        uid = data.split(":")[1]
+        try:
+            uid = int(data.split(":")[1])
+        except ValueError:
+            await query.edit_message_text("❌ Invalid UID.")
+            return
+
         user = get_user_by_uid(uid)
         if user:
             await context.bot.send_message(chat_id=user[1], text="❌ Your activation request was rejected.")
@@ -1554,8 +1562,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             await query.message.reply_text("⚠️ Invalid plan selected. Please try again.")
             return
 
-        telegram_id = query.from_user.id  # ✅ fixed placement
-
+        telegram_id = query.from_user.id
         manual_payment_requests[telegram_id] = {
             "name": plan_name,
             "amount": plan_amount
@@ -1573,11 +1580,16 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         target_id = int(data.split("_")[1])
         context.user_data["awaiting_payment_link_for"] = target_id
         await query.message.reply_text("✉️ Please send the payment link to forward to the user.")
-		
 
+    # ✅ Admin approves plan activation
     elif data.startswith("approve_basic:") or data.startswith("approve_plus:") or data.startswith("approve_elite:"):
-        plan = data.split(":")[0].replace("approve_", "").capitalize()
-        uid = data.split(":")[1]
+        try:
+            plan = data.split(":")[0].replace("approve_", "").capitalize()
+            uid = int(data.split(":")[1])
+        except ValueError:
+            await query.edit_message_text("❌ Invalid UID.")
+            return
+
         user = get_user_by_uid(uid)
         if user:
             activate_user(user[1])
@@ -1602,7 +1614,28 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             await query.edit_message_reply_markup(reply_markup=None)
             await query.message.reply_text("❌ User not found.")
 
+    # 💸 Withdraw approve
+    elif data.startswith("withdraw_approve_"):
+        telegram_id = int(data.split("_")[2])
+        user = get_user_by_telegram_id(telegram_id)
+        if user:
+            # Mark withdrawal as approved in DB if needed
+            await context.bot.send_message(chat_id=telegram_id, text="✅ Your withdrawal has been approved!")
+            await query.edit_message_text("✅ Withdrawal approved.")
+        else:
+            await query.edit_message_text("❌ User not found.")
 
+    # 💸 Withdraw reject
+    elif data.startswith("withdraw_reject_"):
+        telegram_id = int(data.split("_")[2])
+        user = get_user_by_telegram_id(telegram_id)
+        if user:
+            await context.bot.send_message(chat_id=telegram_id, text="❌ Your withdrawal request was rejected.")
+            await query.edit_message_text("❌ Withdrawal rejected.")
+        else:
+            await query.edit_message_text("❌ User not found.")
+
+    # 👀 See other plans
     elif data == "see_other_plans":
         telegram_id = query.from_user.id
         current_plan = get_user_plan(telegram_id)['name']
@@ -1613,7 +1646,6 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             "Elite": {"emoji": "👑", "amount": 9500, "daily": "₹750/-", "weekly": "₹1200/- (Every 4th week)", "referral": "According to the plan of the newly joined user (15% of the plan)"}
         }
 
-        # Show all plans other than current
         keyboard_buttons = []
         for plan_name, details in plan_details.items():
             if plan_name != current_plan:
@@ -1624,7 +1656,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
         keyboard = InlineKeyboardMarkup(keyboard_buttons)
         await query.edit_message_text("Choose a plan to see details:", reply_markup=keyboard)
 
-
+    # 👀 Show plan details
     elif data.startswith("show_plan_"):
         plan_name = data.replace("show_plan_", "").capitalize()
         telegram_id = query.from_user.id
