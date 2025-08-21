@@ -1606,7 +1606,8 @@ app.add_handler(CommandHandler("distribute_now", distribute_now))
 app.add_handler(CommandHandler("channel", channel_command))
 
     # 2. Callback handlers
-app.add_handler(CallbackQueryHandler(wallet_callback, pattern="^wallet_"))
+# Only keep wallet_history in wallet_callback
+app.add_handler(CallbackQueryHandler(wallet_callback, pattern="^wallet_history$"))
 app.add_handler(CallbackQueryHandler(handle_callback_query))
 
     # 3. Conversations
