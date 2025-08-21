@@ -397,21 +397,41 @@ async def channel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ Failed to send message: {e}")
 
 
-#Withdrawl Handler
+# Withdrawl Handler
 async def wallet_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()  # Acknowledge the callback to remove the loading animation
+    await query.answer()
 
     if query.data == "wallet_withdraw":
-        await query.message.reply_text(
-			"💸 *Withdraw feature is locked!*\n\n"
-            "To unlock this feature, refer the app to at least 1 user. Also make sure the new user who joined using your referral code should activate their account with any plan.\n\n"
-			"✅ Active Referred User - 0/1",
-            parse_mode="Markdown"
-		)
+        user = get_user(query.from_user.id)
+        if not user:
+            await query.message.reply_text("❗ You are not registered. Use /start")
+            return
+
+        user_uid = user[8]  # user's UID
+        active_referred_users = get_active_referred_users(user_uid)
+        active_referrals_count = len(active_referred_users) if active_referred_users else 0
+
+        if active_referrals_count >= 1:
+            # Withdrawal allowed
+            await query.message.reply_text(
+                f"💸 You can now request a withdrawal!\n\n"
+                f"✅ Active Referred User - {active_referrals_count}/1\n"
+                f"Please enter the amount you want to withdraw."
+            )
+        else:
+            # Withdrawal locked
+            await query.message.reply_text(
+                f"💸 *Withdraw feature is locked!*\n\n"
+                f"To unlock this feature, refer the app to at least 1 user. "
+                f"Also make sure the new user who joined using your referral code activated their account.\n\n"
+                f"✅ Active Referred User - {active_referrals_count}/1",
+                parse_mode="Markdown"
+            )
 
     elif query.data == "wallet_history":
         await query.message.reply_text("📄 You have not made any Withdrawal Request.")
+
 
 #Adds media support
 async def forward_to_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
