@@ -1060,8 +1060,9 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text("Please select the plan below to activate your account", reply_markup=plan_keyboard)
     return ConversationHandler.END  # actual handling will continue via callback
-	
-# Screenshot Handler
+
+
+	# Screenshot Handler
 async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("📸 handle_screenshot triggered")
 
@@ -1099,14 +1100,15 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🧾 Telegram ID: {telegram_id}"
     )
 
+    # ✅ Fixed buttons (activate_* instead of approve/reject)
     buttons = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("✅ Basic", callback_data=f"approve_basic:{uid}"),
-	    InlineKeyboardButton("💎 Plus", callback_data=f"approve_plus:{uid}"),
-	],		
+            InlineKeyboardButton("✅ Basic", callback_data=f"activate_basic_{uid}"),
+            InlineKeyboardButton("💎 Plus",  callback_data=f"activate_plus_{uid}"),
+        ],		
         [
-            InlineKeyboardButton("👑 Elite", callback_data=f"approve_elite:{uid}"),
-            InlineKeyboardButton("❌ Reject", callback_data=f"reject:{uid}")
+            InlineKeyboardButton("👑 Elite", callback_data=f"activate_elite_{uid}"),
+            InlineKeyboardButton("❌ Reject", callback_data=f"activate_reject_{uid}")
         ]
     ])
 
@@ -1132,6 +1134,7 @@ async def handle_screenshot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("✅ Screenshot received and is under review.")
     print("📸 Screenshot handler completed")
 
+
 # Admin Approve
 async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_CHAT_ID:
@@ -1148,6 +1151,55 @@ async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
     activate_user(user[1])
     await context.bot.send_message(chat_id=user[1], text="✅ Your account has been activated!")
     await update.message.reply_text(f"✅ Activated user UID: {uid}")
+
+
+# --- Admin handles activation approval/rejection ---
+async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    parts = query.data.split("_")   # e.g. ["activate", "elite", "752"]
+    action = parts[1]               # basic / plus / elite / reject
+    uid = parts[2]
+
+    # Get user by UID
+    user = get_user_by_uid(uid)
+    if not user:
+        await query.edit_message_text("❌ User not found")
+        return
+
+    if action == "reject":
+        # ❌ Rejected
+        await context.bot.send_message(
+            chat_id=user[1],  # telegram_id
+            text="❌ Your activation request has been rejected."
+        )
+        await query.edit_message_text(f"❌ Rejected activation for UID {uid}")
+        return
+
+    # ✅ Otherwise, activate the chosen plan
+    try:
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE users SET plan = %s, activation_date = CURRENT_DATE WHERE uid = %s",
+                    (action, uid)
+                )
+                conn.commit()
+
+        # Notify user
+        await context.bot.send_message(
+            chat_id=user[1],  # telegram_id
+            text=f"✅ Your account has been activated with the {action.capitalize()} plan!"
+        )
+
+        # Update admin message
+        await query.edit_message_text(f"✅ Activated {action.capitalize()} plan for UID {uid}")
+
+    except Exception as e:
+        print(f"❌ Error activating user {uid}: {e}")
+        await query.edit_message_text("❌ Failed to activate user. Please try again later.")
+
 
 # Menu Handler
 async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1775,6 +1827,7 @@ withdraw_handler = ConversationHandler(
 app.add_handler(withdraw_handler)
 app.add_handler(CallbackQueryHandler(handle_admin_action, pattern="^(approve|reject)_"))
 
+app.add_handler(CallbackQueryHandler(handle_activation_action, pattern="^activate_"))
 
 # Register conversation handler
 conv_handler = ConversationHandler(
