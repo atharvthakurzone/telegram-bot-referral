@@ -60,14 +60,14 @@ def add_last_income_date_column():
 add_last_income_date_column()
 
 # --- Update wallet balance in DB ---
-def update_wallet_balance(user_id: int, new_balance: int):
-    import sqlite3
-    conn = sqlite3.connect("users.db")  # adjust if your DB name is different
-    cursor = conn.cursor()
-
-    cursor.execute("UPDATE users SET wallet = ? WHERE user_uid = ?", (new_balance, str(user_id)))
-    conn.commit()
-    conn.close()
+def update_wallet_balance(user_id: str, new_balance: int):
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE users SET wallet = %s WHERE user_uid = %s",
+                (new_balance, str(user_id))
+            )
+            conn.commit()
 
 
 ASK_AMOUNT, ASK_MOBILE, ASK_UPI = range(3)
