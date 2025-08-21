@@ -398,7 +398,7 @@ async def channel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ Failed to send message: {e}")
 
 
-# Withdrawl Handler
+# Withdraw
 async def wallet_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -409,7 +409,7 @@ async def wallet_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.message.reply_text("❗ You are not registered. Use /start")
             return
 
-        user_uid = user[8]  # user's UID
+        user_uid = user[8]  # user’s UID
         active_referred_users = get_active_referred_users(user_uid)
         active_referrals_count = len(active_referred_users) if active_referred_users else 0
 
@@ -459,6 +459,7 @@ async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.message.reply_text("💸 Enter the withdrawal amount (minimum ₹250):")
     return ASK_AMOUNT
 
+
 # --- Ask for Amount ---
 async def withdraw_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -479,6 +480,7 @@ async def withdraw_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("📞 Enter your mobile number:")
     return ASK_MOBILE
 
+
 # --- Ask for Mobile ---
 async def withdraw_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     mobile = update.message.text.strip()
@@ -489,6 +491,7 @@ async def withdraw_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["withdraw_mobile"] = mobile
     await update.message.reply_text("🏦 Enter your UPI ID:")
     return ASK_UPI
+
 
 # --- Ask for UPI ---
 async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -524,6 +527,7 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     return ConversationHandler.END
 
+
 # --- Admin Approve/Reject ---
 async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -552,7 +556,7 @@ async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE
             text=f"❌ Your withdrawal of ₹{amount} has been rejected. Please contact support."
         )
         await query.edit_message_text(f"❌ Rejected withdrawal for {user_id}, amount ₹{amount}")
-
+		
 
 
 #Adds media support
