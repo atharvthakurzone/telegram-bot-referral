@@ -560,7 +560,7 @@ async def withdraw_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- Ask for UPI ---
 async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    from db import get_connection  # make sure this import exists at top of your file
+    from db import get_connection  # ensure this import exists at top of your file
 
     upi = update.message.text.strip()
     context.user_data["withdraw_upi"] = upi
@@ -582,10 +582,24 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         with get_connection() as conn:
             with conn.cursor() as cur:
+                # Insert new withdrawal
                 cur.execute('''
                     INSERT INTO withdrawals (user_uid, amount, mobile, upi)
                     VALUES (%s, %s, %s, %s)
                 ''', (user_uid, amount, mobile, upi))
+
+                # 🔹 Keep only latest 10 withdrawals per user
+                cur.execute('''
+                    DELETE FROM withdrawals
+                    WHERE id NOT IN (
+                        SELECT id
+                        FROM withdrawals
+                        WHERE user_uid = %s
+                        ORDER BY created_at DESC
+                        LIMIT 10
+                    ) AND user_uid = %s
+                ''', (user_uid, user_uid))
+
                 conn.commit()
     except Exception as e:
         print(f"❌ ERROR inserting withdrawal into DB: {e}")
