@@ -59,6 +59,17 @@ def add_last_income_date_column():
 
 add_last_income_date_column()
 
+# --- Update wallet balance in DB ---
+def update_wallet_balance(user_id: int, new_balance: int):
+    import sqlite3
+    conn = sqlite3.connect("users.db")  # adjust if your DB name is different
+    cursor = conn.cursor()
+
+    cursor.execute("UPDATE users SET wallet = ? WHERE user_uid = ?", (new_balance, str(user_id)))
+    conn.commit()
+    conn.close()
+
+
 ASK_AMOUNT, ASK_MOBILE, ASK_UPI = range(3)
 ASK_MOBILE = range(1000, 1001)
 manual_payment_requests = {}  # Stores user payment details for admin use
@@ -547,11 +558,10 @@ async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE
     user_id = int(data[1])
     amount = int(data[2])
 
-    user = get_user(user_id)
+    user = get_user(user_id)  # get_user should return user row from DB
 
     if action == "approve":
-        # Deduct from wallet
-        new_balance = user[5] - amount
+        new_balance = user[5] - amount  # deduct wallet
         update_wallet_balance(user_id, new_balance)
 
         await context.bot.send_message(
