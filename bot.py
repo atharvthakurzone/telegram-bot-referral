@@ -474,16 +474,18 @@ async def wallet_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 return
 
             history_text = "📄 *Your Last Withdrawals:*\n\n"
-            for row in rows:
+            for idx, row in enumerate(rows, start=1):
                 amount, mobile, upi, status, created_at = row
+                amount = f"{amount:,}"  # ✅ fix indentation
                 # Add emojis for status
                 status_emoji = "✅" if status == "approved" else "❌" if status == "rejected" else "⏳"
                 history_text += (
+                    f"{idx}️⃣\n"
                     f"💰 Amount: ₹{amount}\n"
                     f"📞 Mobile: {mobile}\n"
                     f"🏦 UPI: {upi}\n"
                     f"📌 Status: {status_emoji} {status.capitalize()}\n"
-                    f"🕒 Requested On: {created_at.strftime('%d-%m-%y (%I:%M%p)')}\n\n"
+                    f"🕒 Requested On: {created_at.strftime('%d-%m-%y • %I:%M %p')}\n\n"  # ✅ add space
                 )
 
             await query.message.reply_text(history_text, parse_mode="Markdown")
