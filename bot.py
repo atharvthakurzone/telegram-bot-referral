@@ -50,7 +50,27 @@ ADMIN_CHAT_ID = 1469443288  # @Deep_1200
 
 init_db()
 init_withdrawals_table()
+
+def add_telegram_column_if_missing():
+    conn = get_connection()
+    cur = conn.cursor()
+    try:
+        # Correct table name
+        cur.execute("""
+            ALTER TABLE withdrawals 
+            ADD COLUMN IF NOT EXISTS telegram_id BIGINT
+        """)
+        conn.commit()
+        print("✅ Column 'telegram_id' added or already exists.")
+    except Exception as e:
+        print("❌ Error adding column:", e)
+    finally:
+        cur.close()
+        conn.close()
+
+
 add_telegram_column_if_missing()
+
 
 def add_last_income_date_column():
     with get_connection() as conn:
@@ -629,8 +649,8 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Inline buttons for admin
     keyboard = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_id}_{amount}"),
-            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{user_id}_{amount}")
+            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{telegram_id}_{amount}"),
+            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{telegram_id}_{amount}")
         ]
     ])
 
@@ -656,7 +676,7 @@ async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     data = query.data.split("_")
     action = data[0]  # approve / reject
-    user_id = int(data[1])  # telegram_id
+    telegram_id = int(data[1])  # telegram_id
     amount = int(data[2])
 
     try:
