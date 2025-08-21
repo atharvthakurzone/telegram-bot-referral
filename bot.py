@@ -59,6 +59,7 @@ def add_last_income_date_column():
 
 add_last_income_date_column()
 
+ASK_AMOUNT, ASK_MOBILE, ASK_UPI = range(3)
 ASK_MOBILE = range(1000, 1001)
 manual_payment_requests = {}  # Stores user payment details for admin use
 
@@ -413,24 +414,145 @@ async def wallet_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         active_referrals_count = len(active_referred_users) if active_referred_users else 0
 
         if active_referrals_count >= 1:
-            # Withdrawal allowed
-            await query.message.reply_text(
-                f"💸 You can now request a withdrawal!\n\n"
-                f"✅ Active Referred User - {active_referrals_count}/1\n"
-                f"Please enter the amount you want to withdraw."
-            )
+            # ✅ Start withdrawal conversation flow
+            return await withdraw_start(update, context)  
+
         else:
-            # Withdrawal locked
+            # ❌ Withdrawal locked
             await query.message.reply_text(
                 f"💸 *Withdraw feature is locked!*\n\n"
                 f"To unlock this feature, refer the app to at least 1 user. "
-                f"Also make sure the new user who joined using your referral code activated their account.\n\n"
+                f"Also make sure the new user who joined using your referral code should activate their account with any plan.\n\n"
                 f"✅ Active Referred User - {active_referrals_count}/1",
                 parse_mode="Markdown"
             )
 
     elif query.data == "wallet_history":
         await query.message.reply_text("📄 You have not made any Withdrawal Request.")
+
+
+# --- Withdraw Start ---
+async def withdraw_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    user = get_user(query.from_user.id)
+
+    if not user:
+        await query.message.reply_text("❗ You are not registered. Use /start")
+        return ConversationHandler.END
+
+    # Get active referrals
+    user_uid = user[8]
+    active_referred_users = get_active_referred_users(user_uid)
+    active_referrals_count = len(active_referred_users) if active_referred_users else 0
+
+    if active_referrals_count < 1:
+        await query.message.reply_text(
+            "💸 *Withdraw feature is locked!*\n\n"
+            "To unlock this feature, refer at least 1 active user.",
+            parse_mode="Markdown"
+        )
+        return ConversationHandler.END
+
+    # Store wallet balance for validation
+    context.user_data["wallet_balance"] = user[5]
+
+    await query.message.reply_text("💸 Enter the withdrawal amount (minimum ₹250):")
+    return ASK_AMOUNT
+
+# --- Ask for Amount ---
+async def withdraw_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        amount = int(update.message.text)
+    except ValueError:
+        await update.message.reply_text("❌ Please enter a valid number.")
+        return ASK_AMOUNT
+
+    if amount < 250:
+        await update.message.reply_text("❌ Minimum withdrawal is ₹250. Enter again:")
+        return ASK_AMOUNT
+
+    if amount > context.user_data["wallet_balance"]:
+        await update.message.reply_text("❌ You don't have enough balance. Enter again:")
+        return ASK_AMOUNT
+
+    context.user_data["withdraw_amount"] = amount
+    await update.message.reply_text("📞 Enter your mobile number:")
+    return ASK_MOBILE
+
+# --- Ask for Mobile ---
+async def withdraw_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    mobile = update.message.text.strip()
+    if not mobile.isdigit() or len(mobile) < 10:
+        await update.message.reply_text("❌ Enter a valid mobile number:")
+        return ASK_MOBILE
+
+    context.user_data["withdraw_mobile"] = mobile
+    await update.message.reply_text("🏦 Enter your UPI ID:")
+    return ASK_UPI
+
+# --- Ask for UPI ---
+async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    upi = update.message.text.strip()
+    context.user_data["withdraw_upi"] = upi
+
+    amount = context.user_data["withdraw_amount"]
+    mobile = context.user_data["withdraw_mobile"]
+    wallet_balance = context.user_data["wallet_balance"]
+
+    user_id = update.effective_user.id
+    username = update.effective_user.username or update.effective_user.first_name
+
+    # Send request to Admin
+    keyboard = InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_id}_{amount}"),
+            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{user_id}_{amount}")
+        ]
+    ])
+
+    msg = (
+        f"💸 *Withdrawal Request*\n\n"
+        f"👤 User: {username} ({user_id})\n"
+        f"📞 Mobile: {mobile}\n"
+        f"🏦 UPI: {upi}\n"
+        f"💰 Amount: ₹{amount}\n"
+        f"💼 Balance Before: ₹{wallet_balance}"
+    )
+
+    await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg, reply_markup=keyboard, parse_mode="Markdown")
+    await update.message.reply_text("✅ Your withdrawal request has been submitted. Admin will review it soon.")
+
+    return ConversationHandler.END
+
+# --- Admin Approve/Reject ---
+async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    data = query.data.split("_")
+
+    action = data[0]  # approve/reject
+    user_id = int(data[1])
+    amount = int(data[2])
+
+    user = get_user(user_id)
+
+    if action == "approve":
+        # Deduct from wallet
+        new_balance = user[5] - amount
+        update_wallet_balance(user_id, new_balance)
+
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=f"✅ Your withdrawal of ₹{amount} has been approved.\n💼 New Balance: ₹{new_balance}"
+        )
+        await query.edit_message_text(f"✅ Approved withdrawal for {user_id}, amount ₹{amount}")
+
+    elif action == "reject":
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=f"❌ Your withdrawal of ₹{amount} has been rejected. Please contact support."
+        )
+        await query.edit_message_text(f"❌ Rejected withdrawal for {user_id}, amount ₹{amount}")
+
 
 
 #Adds media support
@@ -1438,6 +1560,20 @@ async def setup_webhook(app):
     asyncio.create_task(schedule_daily_income())
 
 app = ApplicationBuilder().token(TOKEN).post_init(setup_webhook).build()
+
+#Withdraw Handler
+withdraw_handler = ConversationHandler(
+    entry_points=[CallbackQueryHandler(withdraw_start, pattern="^wallet_withdraw$")],
+    states={
+        ASK_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_amount)],
+        ASK_MOBILE: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_mobile)],
+        ASK_UPI: [MessageHandler(filters.TEXT & ~filters.COMMAND, withdraw_upi)],
+    },
+    fallbacks=[],
+)
+
+app.add_handler(withdraw_handler)
+app.add_handler(CallbackQueryHandler(handle_admin_action, pattern="^(approve|reject)_"))
 
 
 # Register conversation handler
