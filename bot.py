@@ -486,7 +486,7 @@ async def wallet_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     f"📞 Mobile: {mobile}\n"
                     f"🏦 UPI: {upi}\n"
                     f"📌 Status: {status_emoji} {status.capitalize()}\n"
-                    f"🕒 Requested On: {created_at}\n\n"
+                    f"🕒 Requested On: {created_at.strftime('%d-%m-%y (%I:%M%p)')}\n\n"
                 )
 
             await query.message.reply_text(history_text, parse_mode="Markdown")
@@ -797,6 +797,7 @@ async def cancel_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         from datetime import datetime, date
+        from db import get_connection  # needed for querying withdrawals
 
         user = get_user(update.effective_user.id)
         if not user:
@@ -818,7 +819,6 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Calculate referral earnings
         referral_earnings = 0
         referral_percent = {"Basic": 0.10, "Plus": 0.12, "Elite": 0.15}.get(user_plan_name, 0.10)
-        
         plan_amounts = {"Basic": 1499, "Plus": 4499, "Elite": 9500}
         
         for referred_user in active_referred_users:
@@ -836,21 +836,38 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     activation_date = plan_activation_date
                 else:
                     activation_date = datetime.strptime(plan_activation_date, "%Y-%m-%d").date()
-					
                 days_active = (datetime.now().date() - activation_date).days
-
-                # Cap progress at 28 days
                 weekly_bonus_progress = f"{min(days_active, 28)} / 28"
             except Exception as e:
                 print(f"Error calculating weekly bonus: {e}")
                 weekly_bonus_progress = "0 / 28"
 
+        # ✅ Fetch last withdrawal info
+        last_withdraw_text = "None"
+        try:
+            with get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT amount, created_at
+                        FROM withdrawals
+                        WHERE user_uid = %s
+                        ORDER BY created_at DESC
+                        LIMIT 1
+                    """, (user_uid,))
+                    row = cur.fetchone()
+                    if row:
+                        amount, created_at = row
+                        created_at_fmt = created_at.strftime('%y-%m-%d %I:%M%p')
+                        last_withdraw_text = f"₹{amount} ({created_at_fmt})"
+        except Exception as e:
+            print(f"Error fetching last withdrawal: {e}")
+
         # Display
         text_msg = (
             f"💰 Wallet Balance: ₹{wallet_balance}\n"
             f"📈 Referral Earnings: ₹{int(referral_earnings)}\n"
-            f"📝 Last Withdrawal: None\n"
-            f"🎁 Weekly Bonus Progress: {weekly_bonus_progress}"
+            f"🎁 Weekly Bonus Progress: {weekly_bonus_progress}\n"
+            f"📝 Last Withdrawal: {last_withdraw_text}"
         )
 
         # Update the withdrawal button based on active referrals
@@ -877,8 +894,8 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 simple_msg = (
                     f"💰 Wallet Balance: ₹{user[5]}\n"
                     f"📈 Referral Earnings: ₹0\n"
-                    f"📝 Last Withdrawal: None\n"
-                    f"🎁 Weekly Bonus Progress: -0 / 28"
+                    f"🎁 Weekly Bonus Progress: -0 / 28\n"
+                    f"📝 Last Withdrawal: None"
                 )
                 keyboard = InlineKeyboardMarkup([
                     [InlineKeyboardButton("🔒 Withdraw (0/1)", callback_data="wallet_withdraw")]
