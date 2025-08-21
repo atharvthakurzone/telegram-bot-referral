@@ -505,25 +505,35 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     username = update.effective_user.username or update.effective_user.first_name
 
-    # Send request to Admin
+    # Build admin message (✅ no Markdown to avoid parse errors)
+    msg = (
+        f"💸 New withdrawal request!\n\n"
+        f"👤 User: {username} (ID: {user_id})\n"
+        f"📞 Mobile: {mobile}\n"
+        f"💰 Amount: ₹{amount}\n"
+        f"🏦 UPI: {upi}\n"
+        f"📌 Wallet Balance: ₹{wallet_balance}"
+    )
+
+    # Inline buttons for admin
     keyboard = InlineKeyboardMarkup([
         [
-            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_id}_{amount}"),
-            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{user_id}_{amount}")
+            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_id}_{amount}_{upi}"),
+            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{user_id}_{amount}_{upi}")
         ]
     ])
 
-    msg = (
-        f"💸 *Withdrawal Request*\n\n"
-        f"👤 User: {username} ({user_id})\n"
-        f"📞 Mobile: {mobile}\n"
-        f"🏦 UPI: {upi}\n"
-        f"💰 Amount: ₹{amount}\n"
-        f"💼 Balance Before: ₹{wallet_balance}"
+    # Send to admin (⚡ removed parse_mode to prevent crash)
+    await context.bot.send_message(
+        chat_id=ADMIN_CHAT_ID,
+        text=msg,
+        reply_markup=keyboard
     )
 
-    await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=msg, reply_markup=keyboard, parse_mode="Markdown")
-    await update.message.reply_text("✅ Your withdrawal request has been submitted. Admin will review it soon.")
+    # Confirm to user
+    await update.message.reply_text(
+        "✅ Your withdrawal request has been submitted. Please wait for admin approval."
+    )
 
     return ConversationHandler.END
 
