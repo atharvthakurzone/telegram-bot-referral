@@ -558,17 +558,30 @@ async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE
     user_id = int(data[1])
     amount = int(data[2])
 
-    user = get_user(user_id)  # get_user should return user row from DB
+    print("📌 DEBUG Admin Action:", action, user_id, amount)
+
+    user = get_user(user_id)
+    print("📌 DEBUG User fetched:", user)
 
     if action == "approve":
-        new_balance = user[5] - amount  # deduct wallet
-        update_wallet_balance(user_id, new_balance)
+        try:
+            new_balance = user[5] - amount
+            print("📌 DEBUG New Balance:", new_balance)
 
-        await context.bot.send_message(
-            chat_id=user_id,
-            text=f"✅ Your withdrawal of ₹{amount} has been approved.\n💼 New Balance: ₹{new_balance}"
-        )
-        await query.edit_message_text(f"✅ Approved withdrawal for {user_id}, amount ₹{amount}")
+            update_wallet_balance(user_id, new_balance)
+            print("📌 DEBUG Wallet updated in DB")
+
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=f"✅ Your withdrawal of ₹{amount} has been approved.\n💼 New Balance: ₹{new_balance}"
+            )
+            print("📌 DEBUG Sent message to user")
+
+            await query.edit_message_text(f"✅ Approved withdrawal for {user_id}, amount ₹{amount}")
+            print("📌 DEBUG Edited admin message")
+
+        except Exception as e:
+            print("❌ ERROR in approve block:", str(e))
 
     elif action == "reject":
         await context.bot.send_message(
@@ -576,6 +589,7 @@ async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE
             text=f"❌ Your withdrawal of ₹{amount} has been rejected. Please contact support."
         )
         await query.edit_message_text(f"❌ Rejected withdrawal for {user_id}, amount ₹{amount}")
+        print("📌 DEBUG Reject executed successfully")
 		
 
 
