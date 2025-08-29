@@ -25,7 +25,9 @@ def init_db():
                     activation_status BOOLEAN DEFAULT FALSE,
                     banned BOOLEAN DEFAULT FALSE,
                     plus_referral_count INTEGER DEFAULT 0,
-                    plan VARCHAR(10) DEFAULT NULL
+                    plan VARCHAR(10) DEFAULT NULL,
+                    last_income_date DATE,
+                    plan_activation_date DATE
                 )
             ''')
             conn.commit()
