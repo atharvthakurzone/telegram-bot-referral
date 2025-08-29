@@ -19,6 +19,8 @@ from telegram.ext import MessageHandler, filters, CallbackContext
 
 from db import get_connection
 
+from cashfree import generate_payment_link
+
 from telegram import (
     Update, InlineKeyboardMarkup, InlineKeyboardButton,
     ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
@@ -1008,27 +1010,35 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     username = user.username or user.first_name or "User"
-    payment_url = "https://payments.cashfree.com/forms/ZyncPay"
+    payment_url = generate_payment_link(user.id, username)
 
     context.user_data["awaiting_activation"] = True
 
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("💳 Pay Now", url=payment_url)],
-        [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
-    ])
-
     await update.message.reply_text(
-        "🚀 Get ready to unlock your earning journey!\n\n"
-        "💳 Select your plan on the payment page and complete the payment securely.\n\n"
-        "📌 After payment:\n"
-        "1️⃣ Take a screenshot of the success page.\n"
-        "2️⃣ Upload it here for admin verification.\n\n"
-        "✅ Your account will be activated after manual approval.",
-        reply_markup=keyboard,
-        parse_mode="Markdown"
+        "Kindly activate your account to start receiving earning benefits."
     )
 
-    return WAITING_FOR_SCREENSHOT
+    if payment_url:
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("💳 Pay ₹999 Now", url=payment_url)],
+            [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
+        ])
+
+        await update.message.reply_text(
+            "💳 To activate your account, click the button below to pay ₹999 securely and upload the screenshot.",
+            reply_markup=keyboard
+        )
+
+        await update.message.reply_text(
+            "📌 After completing payment:\n\n"
+            "1. Take a screenshot of payment success.\n"
+            "2. Upload it here for admin to verify.\n\n"
+            "_Your account will be activated after manual verification._",
+            parse_mode="Markdown",
+            reply_markup=keyboard
+        )
+
+        return WAITING_FOR_SCREENSHOT
 
     # Payment link failed – fallback flow
     plan_keyboard = InlineKeyboardMarkup([
@@ -1291,7 +1301,7 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         await update.message.reply_text(
-            "✅ Thank you for sharing the mobile number. Payment link will be shared with you in the next '15 minutes'."
+            "✅ Thank you for sharing the mobile number. Payment link will be shared with you in the next 15 minutes."
         )
         return
 
@@ -1643,12 +1653,6 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
             "name": plan_name,
             "amount": plan_amount
         }
-
-        context.user_data["selected_plan"] = {
-            "name": plan_name,
-            "amount": plan_amount
-        }
-
         context.user_data["awaiting_mobile_number"] = True
 
         await query.edit_message_reply_markup(reply_markup=None)
@@ -1892,4 +1896,3 @@ if __name__ == "__main__":
         url_path=TOKEN,
         webhook_url=f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
     )
-
