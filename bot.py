@@ -1008,7 +1008,7 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     username = user.username or user.first_name or "User"
-    payment_url = generate_payment_link(user.id, username)
+    payment_url = "https://payments.cashfree.com/forms/ZyncPay"
 
     context.user_data["awaiting_activation"] = True
 
