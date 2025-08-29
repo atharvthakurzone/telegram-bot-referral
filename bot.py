@@ -919,6 +919,8 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # Referrals
+from telegram.helpers import escape_markdown
+
 async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
     if user:
@@ -928,14 +930,23 @@ async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if users:
             lines = ["👥 Your Referrals:"]
             for username, tid, uid in users:
-                display = username or "Unnamed"
+                # ✅ CHANGE 2: escape Markdown special chars in username
+                display = escape_markdown(username or "Unnamed", version=2)
+                # ✅ CHANGE 3: MarkdownV2-safe mention
                 lines.append(f"[{display}](tg://user?id={tid}) (UID: {uid})")
             msg = "\n".join(lines)
         else:
-            msg = f"👥 No referrals yet.\n🔗 Share your link:\n{link}"
-        await update.message.reply_text(msg, reply_markup=back_menu)
+            # ✅ CHANGE 4: escape link too, in case bot username has special chars
+            msg = f"👥 No referrals yet.\n🔗 Share your link:\n{escape_markdown(link, version=2)}"
+        
+        # ✅ CHANGE 5: added parse_mode="MarkdownV2" so links actually render
+        await update.message.reply_text(msg, reply_markup=back_menu, parse_mode="MarkdownV2")
     else:
-        await update.message.reply_text("❗ You are not registered. Use /start", reply_markup=start_menu)
+        await update.message.reply_text(
+            "❗ You are not registered. Use /start", 
+            reply_markup=start_menu
+        )
+
 
 # Profile
 async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
