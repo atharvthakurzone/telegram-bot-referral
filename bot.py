@@ -1021,18 +1021,17 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
             [InlineKeyboardButton("💳 Pay Now", url=payment_url)],
             [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
         ])
+		
 
         await update.message.reply_text(
-            "💳 To activate your account, click the button below to pay securely and upload the screenshot.",
-            reply_markup=keyboard
-        )
-
-        await update.message.reply_text(
-            "📌 After completing payment:\n\n"
-            "1. Take a screenshot of payment success.\n"
-            "2. Upload it here for admin to verify.\n\n"
-            "_Your account will be activated after manual verification._",
-            parse_mode="Markdown"
+			"🚀 Get ready to unlock your earning journey!\n\n"
+			"💳 Select your plan on the payment page and complete the payment securely.\n\n"
+            "📌 After completing payment:\n"
+            "1. Take a screenshot of the successful payment.\n"
+            "2. Upload it here for admin verification.\n\n"
+            "_Your account will be activated after Admin approval._",
+            parse_mode="Markdown",
+			reply_markup=keyboard
         )
 
         return WAITING_FOR_SCREENSHOT
