@@ -1301,7 +1301,7 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         await update.message.reply_text(
-            "✅ Thank you for sharing the mobile number. Payment link will be shared with you in the next 15 minutes."
+            "✅ Thank you for sharing the mobile number. Payment link will be shared with you in the next '15 minutes'."
         )
         return
 
