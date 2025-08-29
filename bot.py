@@ -1018,12 +1018,12 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if payment_url:
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("💳 Pay ₹999 Now", url=payment_url)],
+            [InlineKeyboardButton("💳 Pay Now", url=payment_url)],
             [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
         ])
 
         await update.message.reply_text(
-            "💳 To activate your account, click the button below to pay ₹999 securely and upload the screenshot.",
+            "💳 To activate your account, click the button below to pay securely and upload the screenshot.",
             reply_markup=keyboard
         )
 
