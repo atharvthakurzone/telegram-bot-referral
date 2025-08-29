@@ -19,8 +19,6 @@ from telegram.ext import MessageHandler, filters, CallbackContext
 
 from db import get_connection
 
-from cashfree import generate_payment_link
-
 from telegram import (
     Update, InlineKeyboardMarkup, InlineKeyboardButton,
     ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
