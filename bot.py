@@ -1658,6 +1658,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
 			"name": plan_name,
 			"amount": plan_amount
 		}
+		
         context.user_data["awaiting_mobile_number"] = True
 
         await query.edit_message_reply_markup(reply_markup=None)
