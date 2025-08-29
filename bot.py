@@ -995,7 +995,8 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, reply_markup=back_menu, parse_mode="Markdown")
 
 
-# Activateasync def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# Activate
+async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
     if not get_user(user.id):
@@ -1011,6 +1012,10 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.user_data["awaiting_activation"] = True
 
+    await update.message.reply_text(
+        "Kindly activate your account to start receiving earning benefits."
+    )
+
     if payment_url:
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("💳 Pay Now", url=payment_url)],
@@ -1018,15 +1023,18 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ])
 
         await update.message.reply_text(
-            "🚀 Get ready to unlock your earning journey!\n\n"
-            "💳 Select your plan on the payment page and complete the payment securely.\n\n"
-            "📌 After payment:\n"
-            "1️⃣ Take a screenshot of the success page.\n"
-            "2️⃣ Upload it here for admin verification.\n\n"
-            "✅ Your account will be activated after manual approval.",
-            reply_markup=keyboard,
+            "💳 To activate your account, click the button below to pay securely and upload the screenshot.",
+            reply_markup=keyboard
+        )
+
+        await update.message.reply_text(
+            "📌 After completing payment:\n\n"
+            "1. Take a screenshot of payment success.\n"
+            "2. Upload it here for admin to verify.\n\n"
+            "_Your account will be activated after manual verification._",
             parse_mode="Markdown"
         )
+
         return WAITING_FOR_SCREENSHOT
 
     # Payment link failed – fallback flow
