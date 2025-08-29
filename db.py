@@ -24,7 +24,8 @@ def init_db():
                     user_uid TEXT UNIQUE,
                     activation_status BOOLEAN DEFAULT FALSE,
                     banned BOOLEAN DEFAULT FALSE,
-                    plus_referral_count INTEGER DEFAULT 0
+                    plus_referral_count INTEGER DEFAULT 0,
+                    plan VARCHAR(10) DEFAULT NULL
                 )
             ''')
             conn.commit()
