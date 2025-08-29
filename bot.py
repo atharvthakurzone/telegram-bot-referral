@@ -930,17 +930,18 @@ async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if users:
             lines = ["👥 Your Referrals:"]
             for username, tid, uid in users:
-                # ✅ CHANGE 2: escape Markdown special chars in username
                 display = escape_markdown(username or "Unnamed", version=2)
-                # ✅ CHANGE 3: MarkdownV2-safe mention
-                lines.append(f"[{display}](tg://user?id={tid}) (UID: {uid})")
+                # ✅ UID wrapped in backticks to avoid ( ) errors
+                lines.append(f"[{display}](tg://user?id={tid}) `UID: {uid}`")
             msg = "\n".join(lines)
         else:
-            # ✅ CHANGE 4: escape link too, in case bot username has special chars
             msg = f"👥 No referrals yet.\n🔗 Share your link:\n{escape_markdown(link, version=2)}"
         
-        # ✅ CHANGE 5: added parse_mode="MarkdownV2" so links actually render
-        await update.message.reply_text(msg, reply_markup=back_menu, parse_mode="MarkdownV2")
+        await update.message.reply_text(
+            msg, 
+            reply_markup=back_menu, 
+            parse_mode="MarkdownV2"
+        )
     else:
         await update.message.reply_text(
             "❗ You are not registered. Use /start", 
