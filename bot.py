@@ -768,18 +768,37 @@ async def handle_referral_code(update: Update, context: ContextTypes.DEFAULT_TYP
     context.user_data['referred_by'] = code
     await update.message.reply_text("📝 Please enter your name:", reply_markup=ReplyKeyboardRemove())
     return ASK_NAME_WITH_REFERRAL
+	
+
+from telegram.error import BadRequest
 
 async def handle_name_with_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     name = update.message.text.strip()
     username = name if name.lower() != "skip" else (user.username or user.first_name)
+
     referred_by = context.user_data.get("referred_by")
     new_uid = add_user(user.id, username, referred_by)
+
     referrer = get_user_by_uid(referred_by)
+
     if referrer:
-        referrer_id = referrer[1]
-        referrer_plan = referrer[9] or "Basic"
-        ref_bonus = PLAN_BENEFITS.get(referrer_plan, {}).get("referral_bonus", 0)
+        referrer_id = referrer[1]  # assuming index 1 is telegram_id
+
+        if referrer_id and str(referrer_id).isdigit():
+            referrer_plan = referrer[9] or "Basic"
+            ref_bonus = PLAN_BENEFITS.get(referrer_plan, {}).get("referral_bonus", 0)
+
+            try:
+                ref_msg = f"🎉 {username} registered with your referral! You earned {ref_bonus} points."
+                await context.bot.send_message(referrer_id, ref_msg, parse_mode="Markdown")
+            except BadRequest as e:
+                print(f"⚠️ Could not notify referrer {referrer_id}: {e}")
+        else:
+            print(f"⚠️ Invalid referrer_id: {referrer_id}")
+    else:
+        print("ℹ️ No referrer found, skipping referral message.")
+
 
 # Add bonus to wallet
         with get_connection() as conn:
