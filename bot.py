@@ -716,7 +716,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     else:
         await update.message.reply_text(
-            "Welcome to the ZyncPay! Please choose an option to continue:",
+            "Welcome to the *ZyncPay*! Please choose an option to continue:",
             reply_markup=start_menu
         )
     
