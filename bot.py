@@ -1780,7 +1780,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
 
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("🔙 Back to Plans", callback_data="see_other_plans")],
-            [InlineKeyboardButton("✅ Select This Plan", callback_data=f"plan_{plan_name.lower()}")]
+            [InlineKeyboardButton("✅ Select This Plan", url="https://payments.cashfree.com/forms/ZyncPay")]
         ])
 
         await query.edit_message_text(text_msg, reply_markup=keyboard, parse_mode="Markdown")
