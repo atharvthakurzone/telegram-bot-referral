@@ -42,7 +42,7 @@ RENDER_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 CASHFREE_APP_ID = os.getenv("CASHFREE_APP_ID")
 CASHFREE_SECRET_KEY = os.getenv("CASHFREE_SECRET_KEY")
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-ADMIN_CHAT_ID = 1469443288  # @Deep_1200
+ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID"))
 
 init_db()
 init_withdrawals_table()
