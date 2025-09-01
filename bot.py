@@ -271,7 +271,7 @@ PLAN_BENEFITS = {
         "referral_bonus": 450
     },
     "Elite": {
-        "daily_income": 700,
+        "daily_income": 750,
         "weekly_bonus": 1200,
         "referral_bonus": 950
     }
