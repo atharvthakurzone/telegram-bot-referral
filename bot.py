@@ -394,26 +394,26 @@ admin_menu = ReplyKeyboardMarkup([
 
 
 # /channel command handler (admin only)
-CHANNEL_ID = "@zyncpayupdates"  # your channel username
+#CHANNEL_ID = "@zyncpayupdates"  # your channel username
 
-async def channel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_id != ADMIN_CHAT_ID:
-        await update.message.reply_text("❌ You are not authorized to use this command.")
-        return
+#async def channel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+   # user_id = update.effective_user.id
+  #  if user_id != ADMIN_CHAT_ID:
+     #   await update.message.reply_text("❌ You are not authorized to use this command.")
+    #    return
 
-    if not context.args:
-        await update.message.reply_text("📤 Send the message you want to post to the channel.\nUse as a reply to this command.")
-        return
+   # if not context.args:
+  #      await update.message.reply_text("📤 Send the message you want to post to the channel.\nUse as a reply to this command.")
+ #       return
 
-    text_to_post = " ".join(context.args)
+#    text_to_post = " ".join(context.args)
 
-    try:
-        await context.bot.send_chat_action(chat_id=CHANNEL_ID, action=ChatAction.TYPING)
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=text_to_post, parse_mode="HTML")
-        await update.message.reply_text("✅ Message sent to the channel.")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Failed to send message: {e}")
+    #try:
+    #    await context.bot.send_chat_action(chat_id=CHANNEL_ID, action=ChatAction.TYPING)
+   #     await context.bot.send_message(chat_id=CHANNEL_ID, text=text_to_post, parse_mode="HTML")
+  #      await update.message.reply_text("✅ Message sent to the channel.")
+ #   except Exception as e:
+#        await update.message.reply_text(f"❌ Failed to send message: {e}")
 
 
 # Withdraw
@@ -695,16 +695,16 @@ async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 #Adds media support
-async def forward_to_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    if user_id != ADMIN_CHAT_ID or not update.message:
-        return
+#async def forward_to_channel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+ #   user_id = update.effective_user.id
+  #  if user_id != ADMIN_CHAT_ID or not update.message:
+   #     return
 
-    try:
-        await update.message.copy(chat_id=CHANNEL_ID)
-        await update.message.reply_text("✅ Content forwarded to the channel.")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Failed to forward: {e}")
+    #try:
+     #   await update.message.copy(chat_id=CHANNEL_ID)
+      #  await update.message.reply_text("✅ Content forwarded to the channel.")
+    #except Exception as e:
+     #   await update.message.reply_text(f"❌ Failed to forward: {e}")
 
 
 # Start
@@ -1947,7 +1947,7 @@ app.add_handler(CommandHandler("activate", activate))
 app.add_handler(CommandHandler("approve", approve))
 app.add_handler(CommandHandler("id", my_id))
 app.add_handler(CommandHandler("distribute_now", distribute_now))
-app.add_handler(CommandHandler("channel", channel_command))
+#app.add_handler(CommandHandler("channel", channel_command))
 
     # 2. Callback handlers
 # Only keep wallet_history in wallet_callback
@@ -1960,7 +1960,7 @@ app.add_handler(conv_handler)
     # 4. Messages
 app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
-app.add_handler(MessageHandler(filters.ALL & filters.User(ADMIN_CHAT_ID), forward_to_channel))
+#app.add_handler(MessageHandler(filters.ALL & filters.User(ADMIN_CHAT_ID), forward_to_channel))
 #app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
 
 async def log_all_updates(update: Update, context: ContextTypes.DEFAULT_TYPE):
