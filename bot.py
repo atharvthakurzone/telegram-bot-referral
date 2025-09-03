@@ -207,23 +207,42 @@ async def pending(update, context):
     await update.message.reply_text(f"⏳ Pending users ({len(pending_users)}):\n" +
                                     "\n".join([str(u[1]) for u in pending_users]))
 
+from db import get_connection, ADMIN_CHAT_ID
+
 async def active(update, context):
     if update.effective_user.id != ADMIN_CHAT_ID:
         return await update.message.reply_text("🚫 You are not authorized!")
-    
-    # Example: filter users with activation_status=True
-    active_users = [u for u in get_all_users() if True]  # replace with actual check
-    await update.message.reply_text(f"✅ Active users ({len(active_users)}):\n" +
-                                    "\n".join(map(str, active_users)))
+
+    # Fetch active users from DB
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT username, user_uid FROM users WHERE activation_status = TRUE")
+            active_users = cur.fetchall()
+
+    if not active_users:
+        await update.message.reply_text("✅ No active users found.")
+        return
+
+    text = "\n".join([f"{user[0] or 'User'} ({user[1]})" for user in active_users])
+    await update.message.reply_text(f"✅ Active users ({len(active_users)}):\n{text}")
+
 
 async def inactive(update, context):
     if update.effective_user.id != ADMIN_CHAT_ID:
         return await update.message.reply_text("🚫 You are not authorized!")
 
-    # Example: filter users with activation_status=False
-    inactive_users = [u for u in get_all_users() if False]  # replace with actual check
-    await update.message.reply_text(f"❌ Inactive users ({len(inactive_users)}):\n" +
-                                    "\n".join(map(str, inactive_users)))
+    # Fetch inactive users from DB
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT username, user_uid FROM users WHERE activation_status = FALSE")
+            inactive_users = cur.fetchall()
+
+    if not inactive_users:
+        await update.message.reply_text("❌ No inactive users found.")
+        return
+
+    text = "\n".join([f"{user[0] or 'User'} ({user[1]})" for user in inactive_users])
+    await update.message.reply_text(f"❌ Inactive users ({len(inactive_users)}):\n{text}")
 
 # ==========================
 # Communication
@@ -2066,22 +2085,39 @@ async def remind_callback(update, context):
         )
 
     elif query.data == "remind_template":
-        inactive_users = get_inactive_users()
-        payment_url = "https://payments.cashfree.com/forms/ZyncPay"
+        # -----------------------------
+        # 1️⃣ Fetch inactive users from DB
+        # -----------------------------
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT username, telegram_id FROM users WHERE activation_status = FALSE")
+                inactive_users = cur.fetchall()  # list of tuples (username, telegram_id)
 
+        payment_url = "https://payments.cashfree.com/forms/ZyncPay"
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("💳 Pay Now", url=payment_url)],
             [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
         ])
 
         success_count, fail_count = 0, 0
+
+        # -----------------------------
+        # 2️⃣ Loop through inactive users and send messages
+        # -----------------------------
         for user in inactive_users:
             try:
-                user_name = user[2] or f"User {user[0]}"
-                text1 = f"Dear {user_name}, you're missing the potential earning and benefits of ZyncPay. Kindly activate your account to start receiving those benefits."
+                username = user[0] or f"User {user[1]}"
+                telegram_id = user[1]
 
-                await context.bot.send_message(chat_id=user[1], text=text1)
+                # -----------------------------
+                # 3️⃣ Send first template message
+                # -----------------------------
+                text1 = f"Dear {username}, you're missing the potential earning and benefits of ZyncPay. Kindly activate your account to start receiving those benefits."
+                await context.bot.send_message(chat_id=telegram_id, text=text1)
 
+                # -----------------------------
+                # 4️⃣ Send second message with payment button
+                # -----------------------------
                 text2 = (
                     "🚀 Get ready to unlock your earning journey!\n\n"
                     "💳 Select your plan on the payment page and complete the payment securely.\n\n"
@@ -2090,18 +2126,21 @@ async def remind_callback(update, context):
                     "2. Upload it here for admin verification.\n\n"
                     "_Your account will be activated after Admin approval._"
                 )
-
                 await context.bot.send_message(
-                    chat_id=user[1],
+                    chat_id=telegram_id,
                     text=text2,
                     parse_mode="Markdown",
                     reply_markup=keyboard
                 )
+
                 success_count += 1
             except Exception as e:
-                print(f"❌ Failed to send reminder to {user[1]}: {e}")
+                print(f"❌ Failed to send reminder to {telegram_id}: {e}")
                 fail_count += 1
 
+        # -----------------------------
+        # 5️⃣ Show admin summary
+        # -----------------------------
         await query.edit_message_text(
             f"✅ Sent template reminders to {success_count} users.\n"
             f"❌ Failed for {fail_count} users."
@@ -2122,15 +2161,27 @@ async def handle_custom_remind(update, context):
         return
     
     custom_message = update.message.text
-    inactive_users = get_inactive_users()
+
+    # -----------------------------
+    # 1️⃣ Fetch inactive users from DB
+    # -----------------------------
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT username, telegram_id FROM users WHERE activation_status = FALSE")
+            inactive_users = cur.fetchall()  # list of tuples (username, telegram_id)
 
     success_count, fail_count = 0, 0
+
+    # -----------------------------
+    # 2️⃣ Send the custom message to each inactive user
+    # -----------------------------
     for user in inactive_users:
         try:
-            await context.bot.send_message(chat_id=user[1], text=custom_message)
+            telegram_id = user[1]
+            await context.bot.send_message(chat_id=telegram_id, text=custom_message)
             success_count += 1
         except Exception as e:
-            print(f"❌ Failed to send custom reminder to {user[1]}: {e}")
+            print(f"❌ Failed to send custom reminder to {telegram_id}: {e}")
             fail_count += 1
 
     # Reset state
