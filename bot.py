@@ -260,27 +260,15 @@ async def remind(update, context):
     if update.effective_user.id != ADMIN_CHAT_ID:
         return await update.message.reply_text("🚫 You are not authorized!")
 
-    failed_ids, sent = [], 0
-
-    for user in get_all_users():  # later filter inactive users
-        user_id = user[1]  # telegram_id
-        try:
-            await context.bot.send_message(
-                chat_id=user_id,
-                text="⏰ Reminder: Please activate your account!"
-            )
-            sent += 1
-        except Exception as e:
-            failed_ids.append(user_id)
-            print(f"⚠️ Could not send to {user_id}: {e}")
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📝 Custom Message", callback_data="remind_custom")],
+        [InlineKeyboardButton("📋 Use Template", callback_data="remind_template")]
+    ])
 
     await update.message.reply_text(
-        f"⏰ Reminder finished.\n"
-        f"✅ Sent: {sent}\n"
-        f"❌ Failed: {len(failed_ids)}"
+        "⏰ Choose how you want to remind inactive users:",
+        reply_markup=keyboard
     )
-    if failed_ids:
-        print("🚫 Failed telegram_ids:", failed_ids)
 
 # TEST VERSION: runs every 60 seconds
 #async def schedule_daily_income():
@@ -2061,6 +2049,100 @@ async def show_pending_activations(update: Update, context: ContextTypes.DEFAULT
         await update.message.reply_text(msg, reply_markup=buttons)
 
 
+async def remind_callback(update, context):
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "remind_custom":
+        context.user_data["awaiting_custom_remind"] = True
+
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("❌ Cancel", callback_data="remind_cancel")]
+        ])
+
+        await query.edit_message_text(
+            "📝 Please send the custom reminder message:",
+            reply_markup=keyboard
+        )
+
+    elif query.data == "remind_template":
+        inactive_users = get_inactive_users()
+        payment_url = "https://payments.cashfree.com/forms/ZyncPay"
+
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("💳 Pay Now", url=payment_url)],
+            [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
+        ])
+
+        success_count, fail_count = 0, 0
+        for user in inactive_users:
+            try:
+                user_name = user[2] or f"User {user[0]}"
+                text1 = f"Dear {user_name}, you're missing the potential earning and benefits of ZyncPay. Kindly activate your account to start receiving those benefits."
+
+                await context.bot.send_message(chat_id=user[1], text=text1)
+
+                text2 = (
+                    "🚀 Get ready to unlock your earning journey!\n\n"
+                    "💳 Select your plan on the payment page and complete the payment securely.\n\n"
+                    "📌 After completing payment:\n"
+                    "1. Take a screenshot of the successful payment.\n"
+                    "2. Upload it here for admin verification.\n\n"
+                    "_Your account will be activated after Admin approval._"
+                )
+
+                await context.bot.send_message(
+                    chat_id=user[1],
+                    text=text2,
+                    parse_mode="Markdown",
+                    reply_markup=keyboard
+                )
+                success_count += 1
+            except Exception as e:
+                print(f"❌ Failed to send reminder to {user[1]}: {e}")
+                fail_count += 1
+
+        await query.edit_message_text(
+            f"✅ Sent template reminders to {success_count} users.\n"
+            f"❌ Failed for {fail_count} users."
+        )
+
+    elif query.data == "remind_cancel":
+        context.user_data["awaiting_custom_remind"] = False
+        await query.edit_message_text("❌ Custom reminder cancelled.")
+
+
+async def handle_custom_remind(update, context):
+    # Only admin can send the custom reminder
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return  
+
+    # Only if admin previously clicked "Custom Message"
+    if not context.user_data.get("awaiting_custom_remind"):
+        return
+    
+    custom_message = update.message.text
+    inactive_users = get_inactive_users()
+
+    success_count, fail_count = 0, 0
+    for user in inactive_users:
+        try:
+            await context.bot.send_message(chat_id=user[1], text=custom_message)
+            success_count += 1
+        except Exception as e:
+            print(f"❌ Failed to send custom reminder to {user[1]}: {e}")
+            fail_count += 1
+
+    # Reset state
+    context.user_data["awaiting_custom_remind"] = False  
+
+    # Confirm to admin
+    await update.message.reply_text(
+        f"✅ Custom reminder sent to {success_count} users.\n"
+        f"❌ Failed for {fail_count} users."
+    )
+
+
 #Hnadle Broadcast Messages
 async def handle_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print("📢 handle_broadcast triggered")
@@ -2146,6 +2228,7 @@ app.add_handler(CommandHandler("distribute_now", distribute_now))
     # 2. Callback handlers
 # Only keep wallet_history in wallet_callback
 app.add_handler(CallbackQueryHandler(wallet_callback, pattern="^wallet_history$"))
+app.add_handler(CallbackQueryHandler(remind_callback, pattern="^remind_"))
 app.add_handler(CallbackQueryHandler(handle_callback_query))
 
     # 3. Conversations
@@ -2154,6 +2237,7 @@ app.add_handler(conv_handler)
     # 4. Messages
 app.add_handler(MessageHandler(filters.PHOTO, handle_screenshot))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_menu))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_custom_remind))
 #app.add_handler(MessageHandler(filters.ALL & filters.User(ADMIN_CHAT_ID), forward_to_channel))
 #app.add_handler(MessageHandler(filters.TEXT & filters.ALL, handle_broadcast))
 
