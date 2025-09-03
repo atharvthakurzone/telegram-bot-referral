@@ -207,8 +207,6 @@ async def pending(update, context):
     await update.message.reply_text(f"⏳ Pending users ({len(pending_users)}):\n" +
                                     "\n".join([str(u[1]) for u in pending_users]))
 
-from db import get_connection, ADMIN_CHAT_ID
-
 async def active(update, context):
     if update.effective_user.id != ADMIN_CHAT_ID:
         return await update.message.reply_text("🚫 You are not authorized!")
