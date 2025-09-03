@@ -182,8 +182,12 @@ async def dm(update, context):
     if not user:
         return await update.message.reply_text("❌ User not found!")
 
-    await context.bot.send_message(chat_id=user[8], text=message_text)
-    await update.message.reply_text(f"✉️ Message sent to {user_uid}")
+    try:
+        await context.bot.send_message(chat_id=user[1], text=message_text)
+        await update.message.reply_text(f"✉️ Message sent to {user_uid}")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Could not send message to {user_uid}. Error: {e}")
+
 
 # ==========================
 # Reports & Tracking
