@@ -232,20 +232,51 @@ async def notify(update, context):
         return await update.message.reply_text("❗ Usage: /notify <message>")
     
     message_text = " ".join(context.args)
-    for user_id in get_all_users():
-        await context.bot.send_message(chat_id=user_id, text=f"📣 {message_text}")
-    
-    await update.message.reply_text("📣 Notification sent to all activated users.")
+    failed_ids, sent = [], 0
+
+    for user in get_all_users():
+        user_id = user[1]  # telegram_id
+        try:
+            await context.bot.send_message(chat_id=user_id, text=f"📣 {message_text}")
+            sent += 1
+        except Exception as e:
+            failed_ids.append(user_id)
+            print(f"⚠️ Could not send to {user_id}: {e}")
+
+    await update.message.reply_text(
+        f"📣 Notification finished.\n"
+        f"✅ Sent: {sent}\n"
+        f"❌ Failed: {len(failed_ids)}"
+    )
+    if failed_ids:
+        print("🚫 Failed telegram_ids:", failed_ids)
+
 
 async def remind(update, context):
     if update.effective_user.id != ADMIN_CHAT_ID:
         return await update.message.reply_text("🚫 You are not authorized!")
 
-    # Example: send reminders to inactive users
-    for user_id in get_all_users():  # replace with actual inactive filter
-        await context.bot.send_message(chat_id=user_id, text="⏰ Reminder: Please activate your account!")
-    
-    await update.message.reply_text("⏰ Reminders sent to inactive users.")
+    failed_ids, sent = [], 0
+
+    for user in get_all_users():  # later filter inactive users
+        user_id = user[1]  # telegram_id
+        try:
+            await context.bot.send_message(
+                chat_id=user_id,
+                text="⏰ Reminder: Please activate your account!"
+            )
+            sent += 1
+        except Exception as e:
+            failed_ids.append(user_id)
+            print(f"⚠️ Could not send to {user_id}: {e}")
+
+    await update.message.reply_text(
+        f"⏰ Reminder finished.\n"
+        f"✅ Sent: {sent}\n"
+        f"❌ Failed: {len(failed_ids)}"
+    )
+    if failed_ids:
+        print("🚫 Failed telegram_ids:", failed_ids)
 
 # TEST VERSION: runs every 60 seconds
 #async def schedule_daily_income():
