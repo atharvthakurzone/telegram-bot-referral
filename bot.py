@@ -387,7 +387,7 @@ back_menu = ReplyKeyboardMarkup([
 ], resize_keyboard=True)
 
 admin_menu = ReplyKeyboardMarkup([
-    [KeyboardButton("📋 Pending Activations"), KeyboardButton("📊 Stats")],
+    [KeyboardButton("⚡ Commands"), KeyboardButton("📊 Stats")],
     [KeyboardButton("🔍 Search User"), KeyboardButton("📤 Broadcast")],
     [KeyboardButton("🏠 Home")]
 ], resize_keyboard=True)
