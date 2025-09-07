@@ -828,6 +828,9 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # --- Admin Approve/Reject ---
+ASK_REASON = range(1)
+
+# --- Admin approves or rejects ---
 async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -841,7 +844,7 @@ async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE
         user = get_user(telegram_id)  # ✅ fetch by telegram_id
         if not user:
             await query.edit_message_text(f"❌ User {telegram_id} not found in DB")
-            return
+            return ConversationHandler.END
 
         if action == "approve":
             new_balance = user[5] - amount  # wallet balance at index 5
@@ -854,35 +857,67 @@ async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE
                     )
                     # Update withdrawal request status
                     cur.execute(
-                        "UPDATE withdrawals SET status = 'approved' WHERE telegram_id = %s AND amount = %s AND status = 'pending'",
+                        "UPDATE withdrawals SET status = 'approved' "
+                        "WHERE telegram_id = %s AND amount = %s AND status = 'pending'",
                         (telegram_id, amount)
                     )
                     conn.commit()
 
             await context.bot.send_message(
                 chat_id=telegram_id,
-                text=f"💰 Please be informed, your withdrawal of ₹{amount} has been approved. The amount will be credited to your UPI ID shortly.\n\n🏦 New Balance: ₹{new_balance}"
+                text=(
+                    f"💰 Please be informed, your withdrawal of ₹{amount} has been approved. "
+                    f"The amount will be credited to your UPI ID shortly.\n\n🏦 New Balance: ₹{new_balance}"
+                )
             )
             await query.edit_message_text(f"✅ Approved withdrawal for {telegram_id}, amount ₹{amount}")
+            return ConversationHandler.END
 
         elif action == "reject":
-            with get_connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(
-                        "UPDATE withdrawals SET status = 'rejected' WHERE telegram_id = %s AND amount = %s AND status = 'pending'",
-                        (telegram_id, amount)
-                    )
-                    conn.commit()
-
-            await context.bot.send_message(
-                chat_id=telegram_id,
-                text=f"❌ Your withdrawal of ₹{amount} has been rejected. Please contact support."
+            # Store reject info temporarily
+            context.user_data["reject_info"] = {
+                "telegram_id": telegram_id,
+                "amount": amount
+            }
+            await query.edit_message_text(
+                f"❌ You chose to reject withdrawal of ₹{amount} for user {telegram_id}.\n\n"
+                f"👉 Please type the reason for rejection:"
             )
-            await query.edit_message_text(f"❌ Rejected withdrawal for {telegram_id}, amount ₹{amount}")
+            return ASK_REASON
 
     except Exception as e:
         print(f"❌ ERROR in approve/reject block: {e}")
         await query.edit_message_text(f"❌ Error processing request: {e}")
+        return ConversationHandler.END
+
+
+# --- Admin provides rejection reason ---
+async def receive_rejection_reason(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    reason = update.message.text
+    reject_info = context.user_data.get("reject_info")
+
+    if not reject_info:
+        await update.message.reply_text("⚠️ No withdrawal request in progress.")
+        return ConversationHandler.END
+
+    telegram_id = reject_info["telegram_id"]
+    amount = reject_info["amount"]
+
+    # Inform the user
+    await context.bot.send_message(
+        chat_id=telegram_id,
+        text=f"❌ Your withdrawal of ₹{amount} has been rejected.\n\n📌 Reason: {reason}"
+    )
+
+    # Confirm to admin
+    await update.message.reply_text(
+        f"✅ Rejection notice sent to user {telegram_id}\n📌 Reason: {reason}"
+    )
+
+    # Clean up
+    context.user_data.pop("reject_info", None)
+
+    return ConversationHandler.END
 
 
 #Adds media support
