@@ -1397,7 +1397,7 @@ async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT
 
         # 2. Fetch fresh user data after update
         referred_user = get_user_by_uid(uid)
-        referred_by = referred_user[3]  # 👈 assuming index 3 = referred_by UID
+        referred_by = referred_user[4]  # 👈 assuming index 3 = referred_by UID
 
         # 3. Handle referral bonus if exists
         if referred_by:
