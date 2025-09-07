@@ -300,6 +300,29 @@ async def remind(update, context):
      #       print(f"❌ Test: Error distributing daily income: {e}")
 
 
+# Global keyboard for support chat
+support_keyboard = InlineKeyboardMarkup([
+    [InlineKeyboardButton(
+        "💬 Chat with Support",
+        web_app=WebAppInfo(url="https://atharvthakurzone.github.io/pay-now/")
+    )],
+    [InlineKeyboardButton("🔙 Back", callback_data="main_menu")]
+])
+
+# Optional test command
+async def test_support(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Testing Support Chat UI. Click the button below:",
+        reply_markup=support_keyboard
+    )
+
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Add test command handler
+    app.add_handler(CommandHandler("testchat", test_support))
+
+
 #due weekly bonus       
 def is_weekly_bonus_due(telegram_id):
     """Check if weekly bonus is due for payment"""
