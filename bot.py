@@ -319,8 +319,6 @@ async def test_support(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == "__main__":
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # Add test command handler
-    app.add_handler(CommandHandler("testchat", test_support))
 	
 #due weekly bonus       
 def is_weekly_bonus_due(telegram_id):
@@ -2364,6 +2362,7 @@ conv_handler = ConversationHandler(
     fallbacks=[MessageHandler(filters.Regex("^(🔙 Back|🏠 Home)$"), cancel_referral)],
 )
 
+app.add_handler(CommandHandler("testchat", test_support))  #Test Mode
 app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("userinfo", userinfo))
