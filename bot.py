@@ -708,6 +708,27 @@ async def withdraw_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ You don't have enough balance. Enter again:")
         return ASK_AMOUNT
 
+    # 🔹 Check referrals for withdrawals > ₹1000
+    user = get_user(update.effective_user.id)
+    user_uid = user[8]
+    active_referred_users = get_active_referred_users(user_uid)
+    active_referrals_count = len(active_referred_users) if active_referred_users else 0
+
+    if amount > 1000 and active_referrals_count < 2:
+        if active_referrals_count == 1:
+            await update.message.reply_text(
+                "❌ You currently have 1 active referral.\n\n"
+                "✅ You can withdraw up to ₹1000 now.\n"
+                "🔑 To withdraw more than ₹1000, refer 1 more active user."
+            )
+        else:
+            await update.message.reply_text(
+                f"❌ To withdraw more than ₹1000, you must have at least 2 active referrals.\n"
+                f"📌 Currently, you have {active_referrals_count} active referral(s)."
+            )
+        return ASK_AMOUNT
+
+    # Store valid amount
     context.user_data["withdraw_amount"] = amount
     await update.message.reply_text("📞 Enter your mobile number:")
     return ASK_MOBILE
