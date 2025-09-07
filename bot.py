@@ -304,7 +304,7 @@ async def remind(update, context):
 admin_keyboard = InlineKeyboardMarkup([
     [InlineKeyboardButton(
         "💬 Open Support Dashboard",
-        web_app=WebAppInfo(url="https://dashboard.tawk.to/#/inbox/68bda438b60b8b19255cffae/all")
+        web_app=WebAppInfo(url="https://dashboard.tawk.to/#/monitoring")
     )]
 ])
 
