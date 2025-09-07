@@ -1016,7 +1016,7 @@ async def handle_name_with_referral(update: Update, context: ContextTypes.DEFAUL
             ref_bonus = PLAN_BENEFITS.get(referrer_plan, {}).get("referral_bonus", 0)
 
             try:
-                ref_msg = f"🎉 {username} registered with your referral! Kindly ask the referral to activate their account with any plan to claim yur referral bonus."
+                ref_msg = f"🎉 {username} registered with your referral! Kindly ask the referral to activate the account with any plan to claim yur referral bonus."
                 await context.bot.send_message(referrer_id, ref_msg, parse_mode="Markdown")
             except BadRequest as e:
                 print(f"⚠️ Could not notify referrer {referrer_id}: {e}")
@@ -1040,7 +1040,7 @@ async def handle_name_with_referral(update: Update, context: ContextTypes.DEFAUL
         )
 
         await context.bot.send_message(referrer_id, ref_msg, parse_mode="Markdown")
-    await update.message.reply_text("✅ You’ve been registered with a referral!", reply_markup=main_menu)
+    await update.message.reply_text("✅ You’ve been registered with a referral!\n\n₹100 just dropped into your account for joining via referral! Invite friends now to earn even bigger rewards before they’re gone! 🚀", reply_markup=main_menu)
     return ConversationHandler.END
 
 # Cancel
