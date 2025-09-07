@@ -300,6 +300,26 @@ async def remind(update, context):
      #       print(f"❌ Test: Error distributing daily income: {e}")
 
 
+# Admin WebApp button
+admin_keyboard = InlineKeyboardMarkup([
+    [InlineKeyboardButton(
+        "💬 Open Support Dashboard",
+        web_app=WebAppInfo(url="https://dashboard.tawk.to/#/inbox/68bda438b60b8b19255cffae/all")
+    )]
+])
+
+async def support_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        await update.message.reply_text("❌ You are not authorized.")
+        return
+
+    await update.message.reply_text(
+        "Welcome Admin! Access your support panel below:",
+        reply_markup=admin_keyboard
+    )
+
+app = ApplicationBuilder().token(TOKEN).build()
+
 # Global keyboard for support chat
 support_keyboard = InlineKeyboardMarkup([
     [InlineKeyboardButton(
@@ -2363,6 +2383,7 @@ conv_handler = ConversationHandler(
 )
 
 app.add_handler(CommandHandler("testchat", test_support))  #Test Mode
+app.add_handler(CommandHandler("supportpanel", support_panel)) #Admin Web app Support chat panel
 app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("userinfo", userinfo))
