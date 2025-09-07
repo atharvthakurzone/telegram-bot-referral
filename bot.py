@@ -321,7 +321,7 @@ if __name__ == "__main__":
 
     # Add test command handler
     app.add_handler(CommandHandler("testchat", test_support))
-
+    app.run_polling()
 
 #due weekly bonus       
 def is_weekly_bonus_due(telegram_id):
