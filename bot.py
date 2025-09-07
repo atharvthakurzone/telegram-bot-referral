@@ -317,7 +317,7 @@ async def test_support(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 if __name__ == "__main__":
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+    app = ApplicationBuilder().token(TOKEN).build()
 
     # Add test command handler
     app.add_handler(CommandHandler("testchat", test_support))
