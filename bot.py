@@ -1339,7 +1339,6 @@ async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT
     # Get user by UID
     user = get_user_by_uid(uid)
     if not user:
-        # Handle photo vs text
         if query.message.photo:
             await query.edit_message_caption("❌ User not found")
         else:
@@ -1352,7 +1351,6 @@ async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT
             chat_id=user[1],  # telegram_id
             text="❌ Your activation request has been rejected."
         )
-        # Handle photo vs text
         if query.message.photo:
             await query.edit_message_caption(f"❌ Rejected activation for UID {uid}")
         else:
@@ -1361,6 +1359,7 @@ async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT
 
     # ✅ Otherwise, activate the chosen plan
     try:
+        # 1. Update the user with plan + activation
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -1371,21 +1370,54 @@ async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT
                         plan_activation_date = CURRENT_DATE
                     WHERE user_uid = %s
                     """,
-                    (plan_name, uid)   # 👈 use plan_name
+                    (plan_name, uid)
                 )
                 conn.commit()
 
-        # Notify user
+        # 2. Fetch fresh user data after update
+        referred_user = get_user_by_uid(uid)
+        referred_by = referred_user[3]  # 👈 assuming index 3 = referred_by UID
+
+        # 3. Handle referral bonus if exists
+        if referred_by:
+            referrer = get_user_by_uid(referred_by)
+            if referrer:
+                referrer_id = referrer[1]  # telegram_id
+                # 👇 NEW: use activated user's plan_name to decide bonus
+                ref_bonus = PLAN_BENEFITS.get(plan_name, {}).get("referral_bonus", 0)
+
+                if ref_bonus > 0:
+                    with get_connection() as conn:
+                        with conn.cursor() as cur:
+                            cur.execute(
+                                "UPDATE users SET wallet = wallet + %s WHERE user_uid = %s",
+                                (ref_bonus, referred_by)
+                            )
+                            conn.commit()
+
+                    # Notify referrer
+                    await context.bot.send_message(
+                        chat_id=referrer_id,
+                        text=(
+                            f"🎉 Congratulations!\n"
+                            f"[{referred_user[2]}](tg://user?id={referred_user[1]}) "
+                            f"(UID: {uid}) has activated with the *{plan_name}* plan.\n"
+                            f"You’ve been rewarded with ₹{ref_bonus}!"
+                        ),
+                        parse_mode="Markdown"
+                    )
+
+        # 4. Notify activated user
         await context.bot.send_message(
             chat_id=user[1],  # telegram_id
-            text=f"✅ Your account has been activated with the {plan_name} plan!"  # 👈 use plan_name
+            text=f"✅ Your account has been activated with the {plan_name} plan!"
         )
 
-        # Update admin message
+        # 5. Update admin message
         if query.message.photo:
-            await query.edit_message_caption(f"✅ Activated {plan_name} plan for UID {uid}")  # 👈 use plan_name
+            await query.edit_message_caption(f"✅ Activated {plan_name} plan for UID {uid}")
         else:
-            await query.edit_message_text(f"✅ Activated {plan_name} plan for UID {uid}")  # 👈 use plan_name
+            await query.edit_message_text(f"✅ Activated {plan_name} plan for UID {uid}")
 
     except Exception as e:
         print(f"❌ Error activating user {uid}: {e}")
