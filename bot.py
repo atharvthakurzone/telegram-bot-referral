@@ -20,7 +20,7 @@ from telegram.ext import MessageHandler, filters, CallbackContext
 from db import get_connection
 
 from telegram import (
-    Update, InlineKeyboardMarkup, InlineKeyboardButton,
+    Update, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton,
     ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 )
 from telegram.ext import (
@@ -1260,7 +1260,7 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if payment_url:
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("💳 Pay Now", url=payment_url)],
+            [InlineKeyboardButton("💳 Pay Now", web_app=WebAppInfo(url=payment_url))],
             [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
         ])
 		
