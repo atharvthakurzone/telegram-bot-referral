@@ -348,8 +348,7 @@ support_keyboard = InlineKeyboardMarkup([
     [InlineKeyboardButton(
         "💬 Chat with Support",
         web_app=WebAppInfo(url="https://atharvthakurzone.github.io/pay-now/")
-    )],
-    [InlineKeyboardButton("🔙 Back", callback_data="main_menu")]
+    )]
 ])
 
 # Optional test command
