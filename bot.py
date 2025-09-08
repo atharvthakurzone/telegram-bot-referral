@@ -1247,7 +1247,7 @@ async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Single inline button for policy
         policy_keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton(
-                "📜 Referral Policy & Terms", 
+                "📜 Terms & Conditions", 
                 web_app=WebAppInfo(url=POLICY_LINK)
             )]
         ])
