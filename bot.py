@@ -302,6 +302,14 @@ async def remind(update, context):
                                                 
 POLICY_LINK = "https://drive.google.com/file/d/158EFh9JwONWSZgACiesNtWuL2teeKgaX/view"
 
+        # Create keyboard with your existing policy link
+policy_keyboard = InlineKeyboardMarkup([
+    [InlineKeyboardButton(
+        "📜 Referral Policy", 
+        web_app=WebAppInfo(url=POLICY_LINK)
+    )]
+])
+
 async def policy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton(
@@ -1219,12 +1227,14 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # Referrals
+# Referrals
 async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
     if user:
         code = user[3]
         users = get_referred_users(code)
         link = f"https://t.me/{context.bot.username}?start={code}"
+        
         if users:
             lines = ["👥 Your Referrals:"]
             for username, tid, uid in users:
@@ -1233,10 +1243,30 @@ async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE):
             msg = "\n".join(lines)
         else:
             msg = f"👥 No referrals yet.\n🔗 Share your link:\n{link}"
-        await update.message.reply_text(msg, reply_markup=back_menu)
+        
+        # Single inline button for policy
+        policy_keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton(
+                "📜 Referral Policy & Terms", 
+                web_app=WebAppInfo(url=POLICY_LINK)
+            )]
+        ])
+        
+        await update.message.reply_text(
+            msg,
+            reply_markup=back_menu,  # This already has the Back button
+            parse_mode="Markdown"
+        )
+        
+        # Send policy button separately
+        await update.message.reply_text(
+            "📋 *Terms and conditions apply to referral bonuses*",
+            reply_markup=policy_keyboard,
+            parse_mode="Markdown"
+        )
     else:
         await update.message.reply_text("❗ You are not registered. Use /start", reply_markup=start_menu)
-
+		
 
 # Profile
 async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
