@@ -304,7 +304,10 @@ POLICY_LINK = "https://drive.google.com/file/d/158EFh9JwONWSZgACiesNtWuL2teeKgaX
 
 async def policy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("📄 View ZyncPay Policy", url=POLICY_LINK)]
+        [InlineKeyboardButton(
+            "📄 View ZyncPay Policy",
+            web_app=WebAppInfo(url=POLICY_LINK)
+        )]
     ])
     await update.message.reply_text(
         "Click the button below to view the latest ZyncPay Withdrawal Policy & Bonus Terms:",
@@ -312,7 +315,6 @@ async def policy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 app = ApplicationBuilder().token(TOKEN).build()
-
 # Admin WebApp button
 admin_keyboard = InlineKeyboardMarkup([
     [InlineKeyboardButton(
