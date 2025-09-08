@@ -1724,6 +1724,11 @@ async def handle_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not is_user_activated(update.effective_user.id):
             return await activate(update, context)
         await update.message.reply_text("🏠 Main Menu:", reply_markup=main_menu)
+		
+		await update.message.reply_text(
+			"Need help? Contact support:",
+			reply_markup=support_keyboard
+		)
 
     elif text == "👤 Profile":
         await profile(update, context)
