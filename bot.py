@@ -299,6 +299,19 @@ async def remind(update, context):
     #    except Exception as e:
      #       print(f"❌ Test: Error distributing daily income: {e}")
 
+                                                
+POLICY_LINK = "https://drive.google.com/file/d/158EFh9JwONWSZgACiesNtWuL2teeKgaX/view"
+
+async def policy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📄 View ZyncPay Policy", url=POLICY_LINK)]
+    ])
+    await update.message.reply_text(
+        "Click the button below to view the latest ZyncPay Withdrawal Policy & Bonus Terms:",
+        reply_markup=keyboard
+    )
+
+app = ApplicationBuilder().token(TOKEN).build()
 
 # Admin WebApp button
 admin_keyboard = InlineKeyboardMarkup([
@@ -2389,6 +2402,7 @@ conv_handler = ConversationHandler(
 
 app.add_handler(CommandHandler("testchat", test_support))  #Test Mode
 app.add_handler(CommandHandler("supportpanel", support_panel)) #Admin Web app Support chat panel
+app.add_handler(CommandHandler("policy", policy_command))
 app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("userinfo", userinfo))
