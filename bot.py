@@ -1298,7 +1298,8 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     status = "✅ Activated" if (data[12] if isinstance(data, tuple) else data.get('activation_status')) else "❌ Not Activated"
 
-    
+    # 🔥 Earnings days progress (like weekly bonus)
+    earnings_days = "0"
     if plan_activation_date:
         try:
             if isinstance(plan_activation_date, date):
@@ -1308,9 +1309,10 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             days_active = (datetime.now().date() - activation_date).days
             earnings_days = str(days_active)
+
         except Exception as e:
-            print("❌ DEBUG Error calculating earnings days:", e)
-            earnings_days = "N/A"
+            print(f"❌ DEBUG Error calculating earnings days: {e}")
+            earnings_days = "0"
 
     msg = (
         f"🆔 User ID: {data[0] if isinstance(data, tuple) else data.get('user_uid')}\n"
