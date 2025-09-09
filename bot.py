@@ -1521,36 +1521,34 @@ async def handle_activation_action(update: Update, context: ContextTypes.DEFAULT
 
         # 2. Fetch fresh user data after update
         referred_user = get_user_by_uid(uid)
-        referred_by = referred_user[4]  # 👈 assuming index 3 = referred_by UID
+        referred_by = referred_user[4]  # 👈 assuming index 4 = referred_by UID
 
-        # 3. Handle referral bonus if exists
+        # 3. Handle referral bonus + withdrawal_limit in ONE transaction silently
         if referred_by:
             referrer = get_user_by_uid(referred_by)
             if referrer:
                 referrer_id = referrer[1]  # telegram_id
-                # 👇 NEW: use activated user's plan_name to decide bonus
+
+                # ✅ NEW: referral bonus
                 ref_bonus = PLAN_BENEFITS.get(plan_name, {}).get("referral_bonus", 0)
+                # ✅ NEW: withdrawal increment mapping
+                PLAN_WITHDRAWAL_INCREMENT = {"Basic": 1000, "Plus": 3000, "Elite": 6000}
+                withdrawal_increment = PLAN_WITHDRAWAL_INCREMENT.get(plan_name, 0)
 
-                if ref_bonus > 0:
-                    with get_connection() as conn:
-                        with conn.cursor() as cur:
-                            cur.execute(
-                                "UPDATE users SET wallet = wallet + %s WHERE user_uid = %s",
-                                (ref_bonus, referred_by)
-                            )
-                            conn.commit()
-
-                    # Notify referrer
-                    await context.bot.send_message(
-                        chat_id=referrer_id,
-                        text=(
-                            f"🎉 Congratulations!\n"
-                            f"[{referred_user[2]}](tg://user?id={referred_user[1]}) "
-                            f"(UID: {uid}) has activated with the *{plan_name}* plan.\n"
-                            f"You’ve been rewarded with ₹{ref_bonus}!"
-                        ),
-                        parse_mode="Markdown"
-                    )
+                # ✅ NEW: single DB transaction for both wallet + withdrawal_limit
+                with get_connection() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            """
+                            UPDATE users
+                            SET wallet = wallet + %s,
+                                withdrawal_limit = withdrawal_limit + %s
+                            WHERE user_uid = %s
+                            """,
+                            (ref_bonus, withdrawal_increment, referred_by)
+                        )
+                        conn.commit()
+                # ✅ Note: no notification sent for withdrawal increment
 
         # 4. Notify activated user
         await context.bot.send_message(
