@@ -1302,16 +1302,20 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # 🔥 Membership Level based on withdrawal_limit
     thresholds = [
-        (6000, "Elite"),
+        (20000, "Legend"),
+        (15000, "Grandmaster"),
+        (10000, "Master"),
+        (7000, "Diamond"),
+        (5000, "Platinum"),
         (3000, "Gold"),
         (1000, "Silver"),
         (0, "Bronze"),
     ]
-    rank = "Bronze"
+    rank = "Bronze"  # default
     for limit, level in thresholds:
         if withdrawal_limit >= limit:
             rank = level
-            break  # stop at first matching threshold
+            break
 
     msg = (
         f"🆔 User ID: {data[0] if isinstance(data, tuple) else data.get('user_uid')}\n"
