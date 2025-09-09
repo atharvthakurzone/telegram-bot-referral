@@ -1226,7 +1226,6 @@ async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # Referrals
-# Referrals
 async def referrals(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
     if user:
@@ -1286,11 +1285,14 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if isinstance(data, tuple):
         referred_by = data[13] if len(data) > 13 else None
         plan_activation_date = data[14] if len(data) > 14 else None
+        withdrawal_limit = data[7] if len(data) > 7 else 0  # Tuple index for withdrawal_limit
     elif isinstance(data, dict):
         referred_by = data.get('referred_by')
         plan_activation_date = data.get('plan_activation_date')
+        withdrawal_limit = data.get('withdrawal_limit', 0)
     else:
         plan_activation_date = None
+        withdrawal_limit = 0
 
     ref_by = "N/A"
     if referred_by and isinstance(referred_by, dict):
@@ -1298,21 +1300,17 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     status = "✅ Activated" if (data[12] if isinstance(data, tuple) else data.get('activation_status')) else "❌ Not Activated"
 
-    # 🔥 Earnings days progress (like weekly bonus)
-    earnings_days = "0"
-    if plan_activation_date:
-        try:
-            if isinstance(plan_activation_date, date):
-                activation_date = plan_activation_date
-            else:
-                activation_date = datetime.strptime(str(plan_activation_date), "%Y-%m-%d").date()
-
-            days_active = (datetime.now().date() - activation_date).days
-            earnings_days = str(days_active)
-
-        except Exception as e:
-            print(f"❌ DEBUG Error calculating earnings days: {e}")
-            earnings_days = "0"
+    # 🔥 Membership Level based on withdrawal_limit
+    thresholds = [
+        (0, "Bronze"),
+        (1000, "Silver"),
+        (3000, "Gold"),
+        (6000, "Elite"),
+    ]
+    rank = "Bronze"
+    for limit, level in thresholds:
+        if withdrawal_limit >= limit:
+            rank = level
 
     msg = (
         f"🆔 User ID: {data[0] if isinstance(data, tuple) else data.get('user_uid')}\n"
@@ -1320,7 +1318,7 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🔗 Referral Code: {data[0] if isinstance(data, tuple) else data.get('user_uid')}\n"
         f"🔓 Status: {status}\n"
         f"📅 Days Since Registration: {data[11] if isinstance(data, tuple) else data.get('registered_days')}\n"
-        f"💸 Earnings Days Completed: {earnings_days}\n"
+        f"🏅 Membership Level: {rank}\n"
         f"👤 Referred By: {ref_by}"
     )
 
