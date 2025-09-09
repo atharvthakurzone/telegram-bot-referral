@@ -20,7 +20,7 @@ def init_db():
                     referred_by TEXT,
                     wallet INTEGER DEFAULT 0,
                     registered_on BIGINT,
-                    earnings_days INTEGER DEFAULT 0,
+                    withdrawal_limit INTEGER DEFAULT 0,
                     user_uid TEXT UNIQUE,
                     activation_status BOOLEAN DEFAULT FALSE,
                     banned BOOLEAN DEFAULT FALSE,
@@ -152,7 +152,7 @@ def get_user_profile(telegram_id):
                 "wallet": user[5],
                 "referral_count": referral_count,
                 "registered_days": days,
-                "earnings_days": user[7],
+                "withdrawal_limit": user[7],
                 "user_uid": user[8],
                 "referred_by": referred_by_link,
                 "activation_status": user[9]
