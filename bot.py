@@ -169,25 +169,68 @@ async def userinfo(update, context):
         f"Banned: {banned_status}"
     )
 
-async def dm(update, context):
+# States
+AWAIT_MESSAGE = 1
+
+# Step 1: /dm command
+async def dm_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_CHAT_ID:
         return await update.message.reply_text("🚫 You are not authorized!")
 
-    if len(context.args) < 2:
-        return await update.message.reply_text("❗ Usage: /dm <user_uid> <message>")
+    if len(context.args) < 1:
+        return await update.message.reply_text("❗ Usage: /dm <user_uid>")
 
     user_uid = context.args[0]
-    message_text = " ".join(context.args[1:])
     user = get_user_by_uid(user_uid)
     if not user:
         return await update.message.reply_text("❌ User not found!")
 
+    # Save the target user_uid in context
+    context.user_data["dm_target_uid"] = user_uid
+
+    await update.message.reply_text(
+        "Kindly enter the message you want to send to the user:\n"
+        "You can use Markdown formatting (bold, italic, links, etc.)"
+    )
+    return AWAIT_MESSAGE  # wait for next message
+
+# Step 2: capture the admin’s reply and send DM with Markdown
+async def dm_send(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_uid = context.user_data.get("dm_target_uid")
+    if not user_uid:
+        return await update.message.reply_text(
+            "❌ DM session expired. Please start again with /dm <user_uid>."
+        )
+
+    message_text = update.message.text
+    user = get_user_by_uid(user_uid)
+    if not user:
+        context.user_data.pop("dm_target_uid", None)
+        return await update.message.reply_text("❌ User not found!")
+
     try:
-        await context.bot.send_message(chat_id=user[1], text=message_text)
+        await context.bot.send_message(
+            chat_id=user[1], 
+            text=message_text,
+            parse_mode="Markdown"  # ✅ Enable Markdown formatting
+        )
         await update.message.reply_text(f"✉️ Message sent to {user_uid}")
     except Exception as e:
-        await update.message.reply_text(f"❌ Could not send message to {user_uid}. Error: {e}")
+        await update.message.reply_text(
+            f"❌ Could not send message to {user_uid}. Error: {e}"
+        )
+    finally:
+        # Clear the state
+        context.user_data.pop("dm_target_uid", None)
 
+    return ConversationHandler.END
+
+# Optional cancel command
+async def dm_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.pop("dm_target_uid", None)
+    await update.message.reply_text("❌ DM cancelled.")
+    return ConversationHandler.END
+	
 
 # ==========================
 # Reports & Tracking
@@ -2419,6 +2462,16 @@ app.add_handler(CallbackQueryHandler(handle_admin_action, pattern="^(approve|rej
 
 app.add_handler(CallbackQueryHandler(handle_activation_action, pattern="^activate_"))
 
+dm_handler = ConversationHandler(
+    entry_points=[CommandHandler("dm", dm_start)],
+    states={
+        AWAIT_MESSAGE: [MessageHandler(filters.TEXT & (~filters.COMMAND), dm_send)]
+    },
+    fallbacks=[CommandHandler("cancel", dm_cancel)],
+)
+
+app.add_handler(dm_handler)
+
 # Register conversation handler
 conv_handler = ConversationHandler(
     entry_points=[
@@ -2440,7 +2493,7 @@ app.add_handler(CommandHandler("policy", policy_command))
 app.add_handler(CommandHandler("ban", ban))
 app.add_handler(CommandHandler("unban", unban))
 app.add_handler(CommandHandler("userinfo", userinfo))
-app.add_handler(CommandHandler("dm", dm))
+#app.add_handler(CommandHandler("dm", dm))
 app.add_handler(CommandHandler("last10", last10))
 app.add_handler(CommandHandler("pending", pending))
 app.add_handler(CommandHandler("active", active))
