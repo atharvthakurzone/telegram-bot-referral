@@ -1298,7 +1298,7 @@ async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     status = "✅ Activated" if (data[12] if isinstance(data, tuple) else data.get('activation_status')) else "❌ Not Activated"
 
-    earnings_days = "0"
+    
     if plan_activation_date:
         try:
             if isinstance(plan_activation_date, date):
