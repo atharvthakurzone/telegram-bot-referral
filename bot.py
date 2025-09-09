@@ -1349,7 +1349,7 @@ async def activate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if payment_url:
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("💳 Pay Now", web_app=WebAppInfo(url=payment_url))],
+            [InlineKeyboardButton("💳 Pay Now", url=payment_url)],
             [InlineKeyboardButton("❌ Cancel", callback_data="activation_back")]
         ])
 		
@@ -2222,7 +2222,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
 
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("🔙 Back to Plans", callback_data="see_other_plans")],
-            [InlineKeyboardButton("✅ Select This Plan", web_app=WebAppInfo(url="https://payments.cashfree.com/forms/ZyncPay"))]
+            [InlineKeyboardButton("✅ Select This Plan", url="https://payments.cashfree.com/forms/ZyncPay")]
         ])
 
         await query.edit_message_text(text_msg, reply_markup=keyboard, parse_mode="Markdown")
