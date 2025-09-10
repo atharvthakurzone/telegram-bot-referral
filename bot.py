@@ -622,15 +622,16 @@ PLAN_BENEFITS = {
     }
 }
 
+
+
 def distribute_daily_income_once():
     users = get_all_users()  
-    today = datetime.date.today()
-	
-    # 🔍 Debug: Check what get_all_users() returns
+    today = date.today()
+    
     print("🔍 Sample users from get_all_users():")
     for u in users[:5]:
         print(u)
-	    
+
     for telegram_id in users:
         print(f"➡️ Checking user: {telegram_id}")
 
@@ -643,24 +644,39 @@ def distribute_daily_income_once():
             print(f"❌ User not found: {telegram_id}")
             continue
 
-        plan = user[12] or "Basic"
+        # Tuple indices for accuracy
         wallet = user[5]
+        plan_activation_date = user[14]  # index as in wallet function
+        plan = user[12] or "Basic"
         last_income_date = user[13]
 
-        # ⏭️ Skip if already paid today
+        # Parse plan activation date
+        if plan_activation_date:
+            if isinstance(plan_activation_date, date):
+                activation_date = plan_activation_date
+            else:
+                activation_date = datetime.strptime(plan_activation_date, "%Y-%m-%d").date()
+            days_active = (today - activation_date).days
+        else:
+            days_active = 0
+
+        # Skip if plan has been active for 30+ days
+        if days_active >= 30:
+            print(f"⏭️ Plan expired (≥30 days): {telegram_id}")
+            continue
+
+        # Skip if already paid today
         if last_income_date == today:
             print(f"⏭️ Already paid today: {telegram_id}")
             continue
-	    
-        daily_income = PLAN_BENEFITS.get(plan, {}).get("daily_income", 0)
-	
-        print(f"📊 User: {telegram_id}, Plan: {plan}, Wallet: ₹{wallet}, Income: ₹{daily_income}")
 
-        # Check if weekly bonus is due
+        # Daily income
+        daily_income = PLAN_BENEFITS.get(plan, {}).get("daily_income", 0)
+
+        # Weekly bonus
         weekly_bonus = 0
         if is_weekly_bonus_due(telegram_id):
             weekly_bonus = PLAN_BENEFITS.get(plan, {}).get("weekly_bonus", 0)
-            print(f"🎉 Weekly bonus of ₹{weekly_bonus} for {telegram_id}")
 
         total_income = daily_income + weekly_bonus
 
@@ -675,7 +691,17 @@ def distribute_daily_income_once():
                     conn.commit()
             print(f"💸 {telegram_id}: +₹{daily_income} (Plan: {plan})")
 
-    print("✅ Daily income distributed to all users.")
+        if weekly_bonus > 0:
+            with get_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE users SET wallet = wallet + %s WHERE telegram_id = %s",
+                        (weekly_bonus, telegram_id)
+                    )
+                    conn.commit()
+            print(f"🎉 {telegram_id}: Weekly bonus +₹{weekly_bonus} (Plan: {plan})")
+
+    print("✅ Daily income distributed to eligible users (plan <30 days).")
 
 
 def get_user_plan(telegram_id):
