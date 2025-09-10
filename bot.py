@@ -15,6 +15,10 @@ from telegram.constants import ChatAction
 
 from telegram import Update
 
+from db import is_user_banned
+
+from telegram import Bot
+
 from telegram.ext import MessageHandler, filters, CallbackContext
 
 from db import get_connection
@@ -34,9 +38,6 @@ from db import (
     get_pending_users
 )
 
-from db import is_user_banned
-
-from telegram import Bot
 
 RENDER_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME")
 CASHFREE_APP_ID = os.getenv("CASHFREE_APP_ID")
@@ -46,6 +47,29 @@ ADMIN_CHAT_ID = int(os.getenv("ADMIN_CHAT_ID"))
 
 init_db()
 init_withdrawals_table()
+
+
+ASK_AMOUNT, ASK_MOBILE, ASK_UPI = range(3)
+ASK_MOBILE = range(1000, 1001)
+manual_payment_requests = {}  # Stores user payment details for admin use
+
+# Set up webhook
+PORT = int(os.environ.get("PORT", 8443))  # Render sets the PORT environment variable
+#app.run_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN)
+
+async def clear_webhook():
+    bot = Bot(token=TOKEN)
+    await bot.delete_webhook(drop_pending_updates=True)
+
+def escape_markdown(text: str) -> str:
+    return re.sub(r'([_*\[\]()~`>#+\-=|{}.!\\])', r'\\\1', text)
+
+webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
+#requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}")
+
+ASK_NAME, ASK_REFERRAL_CODE, ASK_NAME_WITH_REFERRAL, WAITING_FOR_SCREENSHOT = range(4)
+
+#==========================================================================================================================================================================
 
 def add_last_income_date_column():
     with get_connection() as conn:
@@ -58,6 +82,8 @@ def add_last_income_date_column():
 
 add_last_income_date_column()
 
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
 # --- Update wallet balance in DB ---
 def update_wallet_balance(telegram_id: int, new_balance: int):
     with get_connection() as conn:
@@ -67,6 +93,8 @@ def update_wallet_balance(telegram_id: int, new_balance: int):
                 (new_balance, telegram_id)
             )
             conn.commit()
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 def get_withdrawals_by_user(user_uid):
     with get_connection() as conn:
@@ -80,331 +108,8 @@ def get_withdrawals_by_user(user_uid):
             return cur.fetchall()
 
 
-ASK_AMOUNT, ASK_MOBILE, ASK_UPI = range(3)
-ASK_MOBILE = range(1000, 1001)
-manual_payment_requests = {}  # Stores user payment details for admin use
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-async def clear_webhook():
-    bot = Bot(token=TOKEN)
-    await bot.delete_webhook(drop_pending_updates=True)
-
-
-# Set up webhook
-PORT = int(os.environ.get("PORT", 8443))  # Render sets the PORT environment variable
-#app.run_webhook(listen="0.0.0.0", port=PORT, url_path=TOKEN)
-
-def escape_markdown(text: str) -> str:
-    return re.sub(r'([_*\[\]()~`>#+\-=|{}.!\\])', r'\\\1', text)
-
-webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}/{TOKEN}"
-#requests.get(f"https://api.telegram.org/bot{TOKEN}/setWebhook?url={webhook_url}")
-
-ASK_NAME, ASK_REFERRAL_CODE, ASK_NAME_WITH_REFERRAL, WAITING_FOR_SCREENSHOT = range(4)
-
-#Daily Income Scheduler
-async def schedule_daily_income():
-    while True:
-        now = datetime.datetime.now()
-        target = now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
-        wait_seconds = (target - now).total_seconds()
-
-        print(f"⏳ Waiting {int(wait_seconds)} seconds until next daily income...")
-        await asyncio.sleep(wait_seconds)
-
-        try:
-            distribute_daily_income_once()
-            print("✅ Daily income distributed.")
-        except Exception as e:
-            print(f"❌ Error distributing daily income: {e}")
-
-# Commands Function
-async def ban(update, context):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        return await update.message.reply_text("🚫 You are not authorized!")
-
-    if not context.args:
-        return await update.message.reply_text("❗ Usage: /ban <user_uid>")
-    
-    user_uid = context.args[0]
-    user = get_user_by_uid(user_uid)
-    if not user:
-        return await update.message.reply_text("❌ User not found!")
-
-    ban_user(user[8])  # user[8] = telegram_id
-    await update.message.reply_text(f"🔒 User {user_uid} has been banned.")
-
-async def unban(update, context):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        return await update.message.reply_text("🚫 You are not authorized!")
-
-    if not context.args:
-        return await update.message.reply_text("❗ Usage: /unban <user_uid>")
-    
-    user_uid = context.args[0]
-    user = get_user_by_uid(user_uid)
-    if not user:
-        return await update.message.reply_text("❌ User not found!")
-
-    unban_user(user[8])
-    await update.message.reply_text(f"🔓 User {user_uid} has been unbanned.")
-
-async def userinfo(update, context):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        return await update.message.reply_text("🚫 You are not authorized!")
-
-    if not context.args:
-        return await update.message.reply_text("❗ Usage: /userinfo <user_uid>")
-
-    user_uid = context.args[0]
-    user = get_user_by_uid(user_uid)
-    if not user:
-        return await update.message.reply_text("❌ User not found!")
-
-    banned_status = "Yes" if user[11] else "No"  # banned column
-    await update.message.reply_text(
-        f"📝 Info for {user_uid}:\n"
-        f"Username: {user[2]}\n"
-        f"Wallet: {user[5]}\n"
-        f"Activated: {'Yes' if user[9] else 'No'}\n"
-        f"Banned: {banned_status}"
-    )
-
-# States
-AWAIT_MESSAGE = 1
-
-# Step 1: /dm command
-async def dm_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        return await update.message.reply_text("🚫 You are not authorized!")
-
-    if len(context.args) < 1:
-        return await update.message.reply_text("❗ Usage: /dm <user_uid>")
-
-    user_uid = context.args[0]
-    user = get_user_by_uid(user_uid)
-    if not user:
-        return await update.message.reply_text("❌ User not found!")
-
-    # Save the target user_uid in context
-    context.user_data["dm_target_uid"] = user_uid
-
-    await update.message.reply_text(
-        "Kindly enter the message you want to send to the user:\n"
-        "You can use Markdown formatting (bold, italic, links, etc.)"
-    )
-    return AWAIT_MESSAGE  # wait for next message
-
-# Step 2: capture the admin’s reply and send DM with Markdown
-async def dm_send(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_uid = context.user_data.get("dm_target_uid")
-    if not user_uid:
-        return await update.message.reply_text(
-            "❌ DM session expired. Please start again with /dm <user_uid>."
-        )
-
-    message_text = update.message.text
-    user = get_user_by_uid(user_uid)
-    if not user:
-        context.user_data.pop("dm_target_uid", None)
-        return await update.message.reply_text("❌ User not found!")
-
-    try:
-        await context.bot.send_message(
-            chat_id=user[1], 
-            text=message_text,
-            parse_mode="Markdown"  # ✅ Enable Markdown formatting
-        )
-        await update.message.reply_text(f"✉️ Message sent to {user_uid}")
-    except Exception as e:
-        await update.message.reply_text(
-            f"❌ Could not send message to {user_uid}. Error: {e}"
-        )
-    finally:
-        # Clear the state
-        context.user_data.pop("dm_target_uid", None)
-
-    return ConversationHandler.END
-
-# Optional cancel command
-async def dm_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data.pop("dm_target_uid", None)
-    await update.message.reply_text("❌ DM cancelled.")
-    return ConversationHandler.END
-	
-
-# ==========================
-# Reports & Tracking
-# ==========================
-async def last10(update, context):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        return await update.message.reply_text("🚫 You are not authorized!")
-    
-    users = get_all_users()[-10:]
-    await update.message.reply_text("🕒 Last 10 registered users:\n" + "\n".join(map(str, users)))
-
-async def pending(update, context):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        return await update.message.reply_text("🚫 You are not authorized!")
-
-    pending_users = get_pending_users()
-    await update.message.reply_text(f"⏳ Pending users ({len(pending_users)}):\n" +
-                                    "\n".join([str(u[1]) for u in pending_users]))
-
-async def active(update, context):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        return await update.message.reply_text("🚫 You are not authorized!")
-
-    # Fetch active users from DB
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT username, user_uid FROM users WHERE activation_status = TRUE")
-            active_users = cur.fetchall()
-
-    if not active_users:
-        await update.message.reply_text("✅ No active users found.")
-        return
-
-    text = "\n".join([f"{user[0] or 'User'} ({user[1]})" for user in active_users])
-    await update.message.reply_text(f"✅ Active users ({len(active_users)}):\n{text}")
-
-
-async def inactive(update, context):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        return await update.message.reply_text("🚫 You are not authorized!")
-
-    # Fetch inactive users from DB
-    with get_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT username, user_uid FROM users WHERE activation_status = FALSE")
-            inactive_users = cur.fetchall()
-
-    if not inactive_users:
-        await update.message.reply_text("❌ No inactive users found.")
-        return
-
-    text = "\n".join([f"{user[0] or 'User'} ({user[1]})" for user in inactive_users])
-    await update.message.reply_text(f"❌ Inactive users ({len(inactive_users)}):\n{text}")
-
-# ==========================
-# Communication
-# ==========================
-async def notify(update, context):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        return await update.message.reply_text("🚫 You are not authorized!")
-
-    if not context.args:
-        return await update.message.reply_text("❗ Usage: /notify <message>")
-    
-    message_text = " ".join(context.args)
-    failed_ids, sent = [], 0
-
-    for user in get_all_users():
-        user_id = user[1]  # telegram_id
-        try:
-            await context.bot.send_message(chat_id=user_id, text=f"📣 {message_text}")
-            sent += 1
-        except Exception as e:
-            failed_ids.append(user_id)
-            print(f"⚠️ Could not send to {user_id}: {e}")
-
-    await update.message.reply_text(
-        f"📣 Notification finished.\n"
-        f"✅ Sent: {sent}\n"
-        f"❌ Failed: {len(failed_ids)}"
-    )
-    if failed_ids:
-        print("🚫 Failed telegram_ids:", failed_ids)
-
-
-async def remind(update, context):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        return await update.message.reply_text("🚫 You are not authorized!")
-
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("📝 Custom Message", callback_data="remind_custom")],
-        [InlineKeyboardButton("📋 Use Template", callback_data="remind_template")]
-    ])
-
-    await update.message.reply_text(
-        "⏰ Choose how you want to remind inactive users:",
-        reply_markup=keyboard
-    )
-
-# TEST VERSION: runs every 60 seconds
-#async def schedule_daily_income():
- #   while True:
-  #      print("⏳ Test: Distributing income in 60 seconds...")
-   #     await asyncio.sleep(60)  # Run every 1 minute
-#
- #       try:
-  #          distribute_daily_income_once()
-   #         print("✅ Test: Daily income distributed.")
-    #    except Exception as e:
-     #       print(f"❌ Test: Error distributing daily income: {e}")
-
-                                                
-POLICY_LINK = "https://drive.google.com/file/d/158EFh9JwONWSZgACiesNtWuL2teeKgaX/view"
-
-        # Create keyboard with your existing policy link
-policy_keyboard = InlineKeyboardMarkup([
-    [InlineKeyboardButton(
-        "📜 Referral Policy", 
-        web_app=WebAppInfo(url=POLICY_LINK)
-    )]
-])
-
-async def policy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(
-            "📄 View ZyncPay Policy",
-            web_app=WebAppInfo(url=POLICY_LINK)
-        )]
-    ])
-    await update.message.reply_text(
-        "Click the button below to view the latest ZyncPay Withdrawal Policy & Bonus Terms:",
-        reply_markup=keyboard
-    )
-
-app = ApplicationBuilder().token(TOKEN).build()
-# Admin WebApp button
-admin_keyboard = InlineKeyboardMarkup([
-    [InlineKeyboardButton(
-        "💬 Open Support Dashboard",
-        web_app=WebAppInfo(url="https://dashboard.tawk.to/#/monitoring")
-    )]
-])
-
-async def support_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != ADMIN_CHAT_ID:
-        await update.message.reply_text("❌ You are not authorized.")
-        return
-
-    await update.message.reply_text(
-        "Welcome Admin! Access your support panel below:",
-        reply_markup=admin_keyboard
-    )
-
-app = ApplicationBuilder().token(TOKEN).build()
-
-# Global keyboard for support chat
-support_keyboard = InlineKeyboardMarkup([
-    [InlineKeyboardButton(
-        "💬 Chat with Support",
-        web_app=WebAppInfo(url="https://atharvthakurzone.github.io/pay-now/")
-    )]
-])
-
-# Optional test command
-async def test_support(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Testing Support Chat UI. Click the button below:",
-        reply_markup=support_keyboard
-    )
-
-if __name__ == "__main__":
-    app = ApplicationBuilder().token(TOKEN).build()
-
-	
 #due weekly bonus       
 def is_weekly_bonus_due(telegram_id):
     """Check if weekly bonus is due for payment"""
@@ -442,6 +147,9 @@ def is_weekly_bonus_due(telegram_id):
         cur.close()
         conn.close()
 
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
 #weekly bonus orogress
 def get_weekly_bonus_progress(telegram_id):
     user_plan_info = get_user_plan(telegram_id)
@@ -464,6 +172,9 @@ def get_weekly_bonus_progress(telegram_id):
     progress_days = min(days_passed, 28)
     
     return f"{progress_days} / 28"
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 #active referred users
 def get_active_referred_users(referrer_uid):
@@ -493,6 +204,9 @@ def get_active_referred_users(referrer_uid):
         conn.close()
 
 
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
 #log keeper
 def log_action(action: str, actor_id: int, target_id=None, details=None):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -508,7 +222,10 @@ def log_action(action: str, actor_id: int, target_id=None, details=None):
     # Optionally write to file
     with open("admin_log.txt", "a") as f:
         f.write(log_msg + "\n")
-        
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
 def add_plus_referral_column():
     with get_connection() as conn:
         with conn.cursor() as cur:
@@ -518,6 +235,9 @@ def add_plus_referral_column():
             """)
             conn.commit()
 			
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 def add_activation_date_column():
     """Add column to track when the user's plan was activated"""
@@ -531,6 +251,356 @@ def add_activation_date_column():
 
 # Run this at startup
 add_activation_date_column()
+
+
+#==========================================================================================================================================================================
+
+
+#Daily Income Scheduler
+async def schedule_daily_income():
+    while True:
+        now = datetime.datetime.now()
+        target = now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
+        wait_seconds = (target - now).total_seconds()
+
+        print(f"⏳ Waiting {int(wait_seconds)} seconds until next daily income...")
+        await asyncio.sleep(wait_seconds)
+
+        try:
+            distribute_daily_income_once()
+            print("✅ Daily income distributed.")
+        except Exception as e:
+            print(f"❌ Error distributing daily income: {e}")
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+# Commands Function
+async def ban(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("🚫 You are not authorized!")
+
+    if not context.args:
+        return await update.message.reply_text("❗ Usage: /ban <user_uid>")
+    
+    user_uid = context.args[0]
+    user = get_user_by_uid(user_uid)
+    if not user:
+        return await update.message.reply_text("❌ User not found!")
+
+    ban_user(user[8])  # user[8] = telegram_id
+    await update.message.reply_text(f"🔒 User {user_uid} has been banned.")
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+async def unban(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("🚫 You are not authorized!")
+
+    if not context.args:
+        return await update.message.reply_text("❗ Usage: /unban <user_uid>")
+    
+    user_uid = context.args[0]
+    user = get_user_by_uid(user_uid)
+    if not user:
+        return await update.message.reply_text("❌ User not found!")
+
+    unban_user(user[8])
+    await update.message.reply_text(f"🔓 User {user_uid} has been unbanned.")
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+async def userinfo(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("🚫 You are not authorized!")
+
+    if not context.args:
+        return await update.message.reply_text("❗ Usage: /userinfo <user_uid>")
+
+    user_uid = context.args[0]
+    user = get_user_by_uid(user_uid)
+    if not user:
+        return await update.message.reply_text("❌ User not found!")
+
+    banned_status = "Yes" if user[11] else "No"  # banned column
+    await update.message.reply_text(
+        f"📝 Info for {user_uid}:\n"
+        f"Username: {user[2]}\n"
+        f"Wallet: {user[5]}\n"
+        f"Activated: {'Yes' if user[9] else 'No'}\n"
+        f"Banned: {banned_status}"
+    )
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+# States
+AWAIT_MESSAGE = 1
+
+# Step 1: /dm command
+async def dm_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("🚫 You are not authorized!")
+
+    if len(context.args) < 1:
+        return await update.message.reply_text("❗ Usage: /dm <user_uid>")
+
+    user_uid = context.args[0]
+    user = get_user_by_uid(user_uid)
+    if not user:
+        return await update.message.reply_text("❌ User not found!")
+
+    # Save the target user_uid in context
+    context.user_data["dm_target_uid"] = user_uid
+
+    await update.message.reply_text(
+        "Kindly enter the message you want to send to the user:\n"
+        "You can use Markdown formatting (bold, italic, links, etc.)"
+    )
+    return AWAIT_MESSAGE  # wait for next message
+	
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# Step 2: capture the admin’s reply and send DM with Markdown
+async def dm_send(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_uid = context.user_data.get("dm_target_uid")
+    if not user_uid:
+        return await update.message.reply_text(
+            "❌ DM session expired. Please start again with /dm <user_uid>."
+        )
+
+    message_text = update.message.text
+    user = get_user_by_uid(user_uid)
+    if not user:
+        context.user_data.pop("dm_target_uid", None)
+        return await update.message.reply_text("❌ User not found!")
+
+    try:
+        await context.bot.send_message(
+            chat_id=user[1], 
+            text=message_text,
+            parse_mode="Markdown"  # ✅ Enable Markdown formatting
+        )
+        await update.message.reply_text(f"✉️ Message sent to {user_uid}")
+    except Exception as e:
+        await update.message.reply_text(
+            f"❌ Could not send message to {user_uid}. Error: {e}"
+        )
+    finally:
+        # Clear the state
+        context.user_data.pop("dm_target_uid", None)
+
+    return ConversationHandler.END
+
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+# Optional cancel command
+async def dm_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data.pop("dm_target_uid", None)
+    await update.message.reply_text("❌ DM cancelled.")
+    return ConversationHandler.END
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+# ==========================
+# Reports & Tracking
+# ==========================
+async def last10(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("🚫 You are not authorized!")
+    
+    users = get_all_users()[-10:]
+    await update.message.reply_text("🕒 Last 10 registered users:\n" + "\n".join(map(str, users)))
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+async def pending(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("🚫 You are not authorized!")
+
+    pending_users = get_pending_users()
+    await update.message.reply_text(f"⏳ Pending users ({len(pending_users)}):\n" +
+                                    "\n".join([str(u[1]) for u in pending_users]))
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+async def active(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("🚫 You are not authorized!")
+
+    # Fetch active users from DB
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT username, user_uid FROM users WHERE activation_status = TRUE")
+            active_users = cur.fetchall()
+
+    if not active_users:
+        await update.message.reply_text("✅ No active users found.")
+        return
+
+    text = "\n".join([f"{user[0] or 'User'} ({user[1]})" for user in active_users])
+    await update.message.reply_text(f"✅ Active users ({len(active_users)}):\n{text}")
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+async def inactive(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("🚫 You are not authorized!")
+
+    # Fetch inactive users from DB
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT username, user_uid FROM users WHERE activation_status = FALSE")
+            inactive_users = cur.fetchall()
+
+    if not inactive_users:
+        await update.message.reply_text("❌ No inactive users found.")
+        return
+
+    text = "\n".join([f"{user[0] or 'User'} ({user[1]})" for user in inactive_users])
+    await update.message.reply_text(f"❌ Inactive users ({len(inactive_users)}):\n{text}")
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+# ==========================
+# Communication
+# ==========================
+async def notify(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("🚫 You are not authorized!")
+
+    if not context.args:
+        return await update.message.reply_text("❗ Usage: /notify <message>")
+    
+    message_text = " ".join(context.args)
+    failed_ids, sent = [], 0
+
+    for user in get_all_users():
+        user_id = user[1]  # telegram_id
+        try:
+            await context.bot.send_message(chat_id=user_id, text=f"📣 {message_text}")
+            sent += 1
+        except Exception as e:
+            failed_ids.append(user_id)
+            print(f"⚠️ Could not send to {user_id}: {e}")
+
+    await update.message.reply_text(
+        f"📣 Notification finished.\n"
+        f"✅ Sent: {sent}\n"
+        f"❌ Failed: {len(failed_ids)}"
+    )
+    if failed_ids:
+        print("🚫 Failed telegram_ids:", failed_ids)
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+async def remind(update, context):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        return await update.message.reply_text("🚫 You are not authorized!")
+
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📝 Custom Message", callback_data="remind_custom")],
+        [InlineKeyboardButton("📋 Use Template", callback_data="remind_template")]
+    ])
+
+    await update.message.reply_text(
+        "⏰ Choose how you want to remind inactive users:",
+        reply_markup=keyboard
+    )
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+# TEST VERSION: runs every 60 seconds
+#async def schedule_daily_income():
+ #   while True:
+  #      print("⏳ Test: Distributing income in 60 seconds...")
+   #     await asyncio.sleep(60)  # Run every 1 minute
+#
+ #       try:
+  #          distribute_daily_income_once()
+   #         print("✅ Test: Daily income distributed.")
+    #    except Exception as e:
+     #       print(f"❌ Test: Error distributing daily income: {e}")
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+                                                
+POLICY_LINK = "https://drive.google.com/file/d/158EFh9JwONWSZgACiesNtWuL2teeKgaX/view"
+
+        # Create keyboard with your existing policy link
+policy_keyboard = InlineKeyboardMarkup([
+    [InlineKeyboardButton(
+        "📜 Referral Policy", 
+        web_app=WebAppInfo(url=POLICY_LINK)
+    )]
+])
+
+async def policy_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton(
+            "📄 View ZyncPay Policy",
+            web_app=WebAppInfo(url=POLICY_LINK)
+        )]
+    ])
+    await update.message.reply_text(
+        "Click the button below to view the latest ZyncPay Withdrawal Policy & Bonus Terms:",
+        reply_markup=keyboard
+    )
+
+app = ApplicationBuilder().token(TOKEN).build()
+# Admin WebApp button
+admin_keyboard = InlineKeyboardMarkup([
+    [InlineKeyboardButton(
+        "💬 Open Support Dashboard",
+        web_app=WebAppInfo(url="https://dashboard.tawk.to/#/monitoring")
+    )]
+])
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+async def support_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_CHAT_ID:
+        await update.message.reply_text("❌ You are not authorized.")
+        return
+
+    await update.message.reply_text(
+        "Welcome Admin! Access your support panel below:",
+        reply_markup=admin_keyboard
+    )
+
+app = ApplicationBuilder().token(TOKEN).build()
+
+# Global keyboard for support chat
+support_keyboard = InlineKeyboardMarkup([
+    [InlineKeyboardButton(
+        "💬 Chat with Support",
+        web_app=WebAppInfo(url="https://atharvthakurzone.github.io/pay-now/")
+    )]
+])
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+# Optional test command
+async def test_support(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Testing Support Chat UI. Click the button below:",
+        reply_markup=support_keyboard
+    )
+
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(TOKEN).build()
+
+
+
+#$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
 
 from db import get_all_users, get_user, get_connection
 
