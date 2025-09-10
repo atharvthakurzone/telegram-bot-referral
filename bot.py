@@ -530,7 +530,7 @@ async def remind(update, context):
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
                                                 
-POLICY_LINK = "https://drive.google.com/file/d/158EFh9JwONWSZgACiesNtWuL2teeKgaX/view"
+POLICY_LINK = "https://drive.google.com/file/d/1_D6fC2h_Bvb2YdSBOdxdHm30BIywn0bM/view?usp=sharing"
 
         # Create keyboard with your existing policy link
 policy_keyboard = InlineKeyboardMarkup([
