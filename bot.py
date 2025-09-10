@@ -853,7 +853,7 @@ async def withdraw_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- Ask for UPI ---
 async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    from db import get_connection  # ensure this import exists at top of your file
+    from db import get_connection
 
     upi = update.message.text.strip()
     context.user_data["withdraw_upi"] = upi
@@ -868,20 +868,60 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
     user_id = update.effective_user.id
-    user_uid = user[8]  # UID from DB
+    user_uid = user[8]
     username = update.effective_user.username or update.effective_user.first_name
 
-    # ✅ Insert withdrawal request into DB
     try:
         with get_connection() as conn:
             with conn.cursor() as cur:
-                # Insert new withdrawal
+                # Get total approved withdrawals by telegram_id
+                cur.execute('''
+                    SELECT COALESCE(SUM(amount), 0)
+                    FROM withdrawals
+                    WHERE telegram_id = %s AND status = 'approved'
+                ''', (user_id,))
+                total_withdrawn = cur.fetchone()[0]
+
+                # Get user's withdrawal limit
+                cur.execute('''
+                    SELECT withdrawal_limit
+                    FROM users
+                    WHERE telegram_id = %s
+                ''', (user_id,))
+                result = cur.fetchone()
+                withdrawal_limit = result[0] if result else 0
+
+                # Check if withdrawal exceeds limit
+                if total_withdrawn + amount > withdrawal_limit:
+                    # Inform user
+                    await update.message.reply_text(
+                        f"❌ Withdrawal rejected: Your total approved withdrawn amount (₹{total_withdrawn}) "
+                        f"plus the current request (₹{amount}) exceeds your withdrawal limit of ₹{withdrawal_limit}."
+                    )
+
+                    # Notify admin
+                    admin_msg = (
+                        f"⚠️ Automatic Withdrawal Rejection Alert!\n\n"
+                        f"👤 User: {username} (ID: {user_id})\n"
+                        f"💰 Requested Amount: ₹{amount}\n"
+                        f"📊 Already Withdrawn: ₹{total_withdrawn}\n"
+                        f"📌 Withdrawal Limit: ₹{withdrawal_limit}\n\n"
+                        f"This request was blocked automatically."
+                    )
+                    await context.bot.send_message(
+                        chat_id=ADMIN_CHAT_ID,
+                        text=admin_msg
+                    )
+
+                    return ConversationHandler.END
+
+                # Insert new withdrawal as pending
                 cur.execute('''
                     INSERT INTO withdrawals (user_uid, telegram_id, amount, mobile, upi, status)
                     VALUES (%s, %s, %s, %s, %s, 'pending')
                 ''', (user_uid, user_id, amount, mobile, upi))
 
-                # 🔹 Keep only latest 10 withdrawals per user
+                # Cleanup: Keep only last 10 withdrawals per user
                 cur.execute('''
                     DELETE FROM withdrawals
                     WHERE id NOT IN (
@@ -894,12 +934,13 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 ''', (user_uid, user_uid))
 
                 conn.commit()
+
     except Exception as e:
         print(f"❌ ERROR inserting withdrawal into DB: {e}")
         await update.message.reply_text("❌ Error saving your request. Please try again later.")
         return ConversationHandler.END
 
-    # Build admin message
+    # Notify admin if within limit
     msg = (
         f"💸 New withdrawal request!\n\n"
         f"👤 User: {username} (ID: {user_id})\n"
@@ -909,7 +950,6 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📌 Wallet Balance: ₹{wallet_balance}"
     )
 
-    # Inline buttons for admin
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user_id}_{amount}"),
@@ -917,20 +957,19 @@ async def withdraw_upi(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
     ])
 
-    # Send to admin
     await context.bot.send_message(
         chat_id=ADMIN_CHAT_ID,
         text=msg,
         reply_markup=keyboard
     )
 
-    # Confirm to user
     await update.message.reply_text(
         "✅ Your withdrawal request has been submitted. Please wait for admin approval."
     )
 
     return ConversationHandler.END
 
+----------------------------------------------------------------------------------------------------------------------------
 
 # --- Admin Approve/Reject ---
 ASK_REASON = range(1)
