@@ -1120,28 +1120,46 @@ async def receive_rejection_reason(update: Update, context: ContextTypes.DEFAULT
     amount = reject_info["amount"]
 
     try:
-        # Attempt to notify the user
-        await context.bot.send_message(
-            chat_id=telegram_id,
-            text=f"❌ Your withdrawal of ₹{amount} has been rejected.\n\n📌 Reason: {reason}"
-        )
-    except BadRequest as e:
-        print(f"⚠️ Could not notify user {telegram_id}: {e}")
+        # --- Update withdrawal status in DB ---
+        with get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE withdrawals
+                    SET status = 'rejected', reason = %s
+                    WHERE telegram_id = %s AND amount = %s AND status = 'pending'
+                    """,
+                    (reason, telegram_id, amount)
+                )
+                conn.commit()
+
+        # --- Attempt to notify the user ---
+        try:
+            await context.bot.send_message(
+                chat_id=telegram_id,
+                text=f"❌ Your withdrawal of ₹{amount} has been rejected.\n\n📌 Reason: {reason}"
+            )
+        except BadRequest as e:
+            print(f"⚠️ Could not notify user {telegram_id}: {e}")
+            await update.message.reply_text(
+                f"⚠️ Could not send rejection notice to user {telegram_id}. "
+                "Maybe the user hasn’t started the bot or blocked it."
+            )
+
+        # --- Confirm to admin ---
         await update.message.reply_text(
-            f"⚠️ Could not send rejection notice to user {telegram_id}. "
-            "Maybe the user hasn’t started the bot or blocked it."
+            f"✅ Rejection process completed for user {telegram_id}\n📌 Reason: {reason}"
         )
 
-    # Confirm to admin
-    await update.message.reply_text(
-        f"✅ Rejection process completed for user {telegram_id}\n📌 Reason: {reason}"
-    )
+    except Exception as e:
+        print(f"❌ ERROR updating withdrawal or sending message: {e}")
+        await update.message.reply_text(f"❌ Error processing rejection: {e}")
 
-    # Clean up
-    context.user_data.pop("reject_info", None)
+    finally:
+        # --- Clean up ---
+        context.user_data.pop("reject_info", None)
 
     return ConversationHandler.END
-
 
 
 #Adds media support
