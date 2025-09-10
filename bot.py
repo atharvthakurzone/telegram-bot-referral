@@ -1106,6 +1106,8 @@ async def handle_admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 # --- Admin provides rejection reason ---
+from telegram.error import BadRequest
+
 async def receive_rejection_reason(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reason = update.message.text
     reject_info = context.user_data.get("reject_info")
@@ -1117,21 +1119,29 @@ async def receive_rejection_reason(update: Update, context: ContextTypes.DEFAULT
     telegram_id = reject_info["telegram_id"]
     amount = reject_info["amount"]
 
-    # Inform the user
-    await context.bot.send_message(
-        chat_id=telegram_id,
-        text=f"❌ Your withdrawal of ₹{amount} has been rejected.\n\n📌 Reason: {reason}"
-    )
+    try:
+        # Attempt to notify the user
+        await context.bot.send_message(
+            chat_id=telegram_id,
+            text=f"❌ Your withdrawal of ₹{amount} has been rejected.\n\n📌 Reason: {reason}"
+        )
+    except BadRequest as e:
+        print(f"⚠️ Could not notify user {telegram_id}: {e}")
+        await update.message.reply_text(
+            f"⚠️ Could not send rejection notice to user {telegram_id}. "
+            "Maybe the user hasn’t started the bot or blocked it."
+        )
 
     # Confirm to admin
     await update.message.reply_text(
-        f"✅ Rejection notice sent to user {telegram_id}\n📌 Reason: {reason}"
+        f"✅ Rejection process completed for user {telegram_id}\n📌 Reason: {reason}"
     )
 
     # Clean up
     context.user_data.pop("reject_info", None)
 
     return ConversationHandler.END
+
 
 
 #Adds media support
