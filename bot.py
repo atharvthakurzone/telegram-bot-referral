@@ -2565,6 +2565,16 @@ async def setup_webhook(app):
 
 app = ApplicationBuilder().token(TOKEN).post_init(setup_webhook).build()
 
+admin_reject_handler = ConversationHandler(
+    entry_points=[CallbackQueryHandler(handle_admin_action, pattern="^reject_")],
+    states={
+        ASK_REASON: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_rejection_reason)]
+    },
+    fallbacks=[],
+)
+
+app.add_handler(admin_reject_handler)
+
 #Withdraw Handler
 withdraw_handler = ConversationHandler(
     entry_points=[CallbackQueryHandler(withdraw_start, pattern="^wallet_withdraw$")],
