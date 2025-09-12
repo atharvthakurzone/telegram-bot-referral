@@ -580,7 +580,7 @@ app = ApplicationBuilder().token(TOKEN).build()
 support_keyboard = InlineKeyboardMarkup([
     [InlineKeyboardButton(
         "💬 Chat with Support",
-        web_app=WebAppInfo(url="https://atharvthakurzone.github.io/pay-now/")
+        web_app=WebAppInfo(url="https://tawk.to/chat/68bda438b60b8b19255cffae/1j4icj04t")
     )]
 ])
 
