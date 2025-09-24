@@ -56,7 +56,7 @@ def generate_uid():
         with conn.cursor() as cur:
             cur.execute('SELECT COUNT(*) FROM users')
             count = cur.fetchone()[0] + 1
-            return str(749 + count)
+            return str(1200 + count)
 
 
 def add_user(telegram_id, username, referred_by):
