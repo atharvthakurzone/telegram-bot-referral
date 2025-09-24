@@ -577,11 +577,26 @@ async def support_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 app = ApplicationBuilder().token(TOKEN).build()
 
 # Global keyboard for support chat
+#support_keyboard = InlineKeyboardMarkup([
+    #[InlineKeyboardButton(
+   #     "💬 Chat with Support",
+  #      web_app=WebAppInfo(url="https://tawk.to/chat/68bda438b60b8b19255cffae/1j4icj04t")
+ #   )]
+#])
+
 support_keyboard = InlineKeyboardMarkup([
-    [InlineKeyboardButton(
-        "💬 Chat with Support",
-        web_app=WebAppInfo(url="https://tawk.to/chat/68bda438b60b8b19255cffae/1j4icj04t")
-    )]
+    [
+        InlineKeyboardButton(
+            "💬 Chat with Support",
+            web_app=WebAppInfo(url="https://tawk.to/chat/68bda438b60b8b19255cffae/1j4icj04t")
+        )
+    ],
+    [
+        InlineKeyboardButton(
+            "🌐 Visit our Website",
+            url="https://www.zyncpay.live"
+        )
+    ]
 ])
 
 
